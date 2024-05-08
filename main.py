@@ -14,21 +14,22 @@ from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
 from typing import cast 
 
 ### 设定文本
-text_path = 'datast/test_data.txt'
+text_name = 'test_data.txt'
+text_path = f'dataset/{text_name}'
 embedding_model_path = "models/bce-embedding-base_v1"
-model_path = "models/baichuan2-7B-base"
+model_path = "../LLModel/baichuan2-7B-base"
 
 ### 切分chunk
 loader = TextLoader(text_path, encoding='utf-8') # 读取Documents格式
 docs = loader.load() # 读取Documents格式，服务于split_documents()
-# docs = read_text(text_path) # 读取string，服务于split_text()
+docs = read_text(text_path) # 读取string，服务于split_text()
 
 # 一般来说，用RecursiveCharacterTextSplitter把大段的文字粗略地分割成块。这里不要求那么多，只希望章节类文字能大致分开，章节内只需琐碎分开就行。
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1024,
     chunk_overlap=0
 )
-split_docs = text_splitter.split_documents(docs)
+split_docs = text_splitter.split_text(docs)
 
 # 二次分割，这里会把上一步大块分开的文本细分，此时需要考虑LLM embedding的inuput windows。
 text_splitter = SentenceTransformersTokenTextSplitter(
@@ -38,7 +39,7 @@ text_splitter = SentenceTransformersTokenTextSplitter(
 )
 token_docs = [] 
 for doc in split_docs:
-    token_docs += text_splitter.split_documents(doc)
+    token_docs += text_splitter.split_text(doc)
 
 ### 使用chromadb自带的embedding_function
 
@@ -64,7 +65,7 @@ bce_embedding_function = bceEmbeddingFunction(embedding_model_path)
 
 ### 可以用client设计pipeline
 chroma_client = chromadb.Client()
-chroma_collection = chroma_client.create_collection(text_path, embedding_function=bce_embedding_function) # 设定文件名(我用文件路径代替)、embedding函数
+chroma_collection = chroma_client.create_collection(text_name, embedding_function=bce_embedding_function) # 设定文件名(我用文件路径代替)、embedding函数
 ids = [str(i) for i in range(len(token_docs))]
 chroma_collection.add(ids=ids, documents=token_docs) # 添加ids和切分文件，尺寸要一致
 docs_count = chroma_collection.count()
@@ -80,6 +81,7 @@ def retrievel(query, n_results=3):
     return results
 query = "萧强的老婆是谁"
 retrievel_docs = retrievel(query)
+print(retrievel_docs)
 
 # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
 def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
@@ -89,6 +91,7 @@ def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
 model, tokenizer = init_model(model_path) # get model
 hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
 retrievel_docs = retrievel(f'{query} {hypothetical_answer}')
+print(retrievel_docs)
 
 def additional_query_generation(query: str, model, tokenizer) -> str:
     message = additional_query_template(query)
