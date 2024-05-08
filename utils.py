@@ -40,12 +40,14 @@ def init_model(path):
     tokenizer = AutoTokenizer.from_pretrained(path)
     return model, tokenizer
 
-def baichuan_wrapper(func, *args, **kwargs) -> List[dict]:
-    system, question = func(*args, **kwargs)
-    ret = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": question}]
-    return ret
+def baichuan_wrapper(func) -> List[dict]:
+    def wrapper(*args, **kwargs):
+        system, question = func(*args, **kwargs)
+        ret = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": question}]
+        return ret
+    return wrapper
 
 @baichuan_wrapper
 def RAG_template_for_baichuan(query: str, informations: str) -> List[dict]:
