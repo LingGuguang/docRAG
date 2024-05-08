@@ -18,6 +18,7 @@ text_name = 'test_data.txt'
 text_path = f'dataset/{text_name}'
 embedding_model_path = "models/bce-embedding-base_v1"
 model_path = "../LLModel/baichuan2-7B-base"
+chroma_path = "dataset/"
 
 ### 切分chunk
 loader = TextLoader(text_path, encoding='utf-8') # 读取Documents格式
@@ -64,7 +65,7 @@ class bceEmbeddingFunction(EmbeddingFunction[Documents]):
 bce_embedding_function = bceEmbeddingFunction(embedding_model_path)
 
 ### 可以用client设计pipeline
-chroma_client = chromadb.Client()
+chroma_client = chromadb.PersistentClient(chroma_path)
 chroma_collection = chroma_client.create_collection(text_name, embedding_function=bce_embedding_function) # 设定文件名(我用文件路径代替)、embedding函数
 ids = [str(i) for i in range(len(token_docs))]
 chroma_collection.add(ids=ids, documents=token_docs) # 添加ids和切分文件，尺寸要一致
@@ -81,7 +82,7 @@ def retrievel(query, n_results=3):
     return results
 query = "萧强的老婆是谁"
 retrievel_docs = retrievel(query)
-print(retrievel_docs)
+print(retrievel_docs['documents'])
 
 # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
 def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
@@ -91,10 +92,15 @@ def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
 model, tokenizer = init_model(model_path) # get model
 hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
 retrievel_docs = retrievel(f'{query} {hypothetical_answer}')
-print(retrievel_docs)
+print(retrievel_docs['documents'])
 
 def additional_query_generation(query: str, model, tokenizer) -> str:
     message = additional_query_template(query)
+    ret = model.chat(tokenizer, message)
+    return ret
+additional_query = additional_query_generation(query, model, tokenizer)
+retrievel_docs = retrievel(additional_query)
+print(retrievel_docs['documents'])
 
 # Augment Generation
 def augment_generation(query: str, retrievel_docs: list, model, tokenizer) -> str:
