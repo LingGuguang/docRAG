@@ -15,8 +15,8 @@ from typing import cast
 
 ### 设定文本
 text_path = 'datast/test_data.txt'
-embedding_model_path = "bce-embedding-base_v1"
-model_path = "baichuan2-7B-base"
+embedding_model_path = "models/bce-embedding-base_v1"
+model_path = "models/baichuan2-7B-base"
 model, tokenizer = init_model(model_path) # get model
 
 ### 切分chunk
