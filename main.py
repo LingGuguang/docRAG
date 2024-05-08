@@ -17,7 +17,6 @@ from typing import cast
 text_path = 'datast/test_data.txt'
 embedding_model_path = "models/bce-embedding-base_v1"
 model_path = "models/baichuan2-7B-base"
-model, tokenizer = init_model(model_path) # get model
 
 ### 切分chunk
 loader = TextLoader(text_path, encoding='utf-8') # 读取Documents格式
@@ -87,6 +86,7 @@ def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
     message = hypothetical_answer_template(query)
     ret = model.chat(tokenizer, message)
     return ret 
+model, tokenizer = init_model(model_path) # get model
 hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
 retrievel_docs = retrievel(f'{query} {hypothetical_answer}')
 
