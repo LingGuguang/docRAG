@@ -35,9 +35,19 @@ def save_txt(path, dic):
 
 def init_model(path):
     # Load model directly
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-    model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=True)
-    tokenizer = AutoTokenizer.from_pretrained(path)
+    print("init model ...")
+    model = AutoModelForCausalLM.from_pretrained(
+        path,
+        torch_dtype=torch.float16,
+        device_map="auto",
+        trust_remote_code=True
+    )
+    model.generation_config = GenerationConfig.from_pretrained(path)
+    tokenizer = AutoTokenizer.from_pretrained(
+        path,
+        use_fast=False,
+        trust_remote_code=True, 
+    )
     return model, tokenizer
 
 def baichuan_wrapper(func) -> List[dict]:
@@ -51,7 +61,7 @@ def baichuan_wrapper(func) -> List[dict]:
 
 @baichuan_wrapper
 def RAG_template_for_baichuan(query: str, informations: str) -> List[dict]:
-    system = f'你是专业的中文系学生，你需要回答关于文学作品故事情节的问题。为了回答问题，你将看到一些文学作品的文字片段。你需要根据片段，总结与问题有关的信息，然后用流畅的语言回答问题。并不是每个文字片段都存在有效信息，因此当你无法根据现有信息回答问题时，请诚实地回答"基于当前材料，我无法回答问题"。'
+    system = f'你是专业的中文系学生，你需要回答关于文学作品故事情节的问题。为了回答问题，你将看到一些文字片段。你需要根据片段，尽可能地回答问题。当你无法根据现有信息回答问题时，请诚实地回答不知道'
     question  = f"""问题:{query}? \n\n文字片段: {informations}\n\n你的回答:"""
     return system, question
 

@@ -4,7 +4,7 @@ import torch
 from typing import Any, List, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
-from transformers import AutoModelForCausalLM, GenerationConfig, AutoTokenizer, AutoModel
+from transformers import AutoModelForCausalLM, GenerationConfig, AutoTokenizer, AutoModel, AutoModelForSequenceClassification
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter, SentenceTransformersTokenTextSplitter
 from langchain_community.document_loaders import TextLoader
@@ -13,12 +13,17 @@ import chromadb
 from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
 from typing import cast 
 
+import os, sys
+
 ### 设定文本
 text_name = 'test_data.txt'
 text_path = f'dataset/{text_name}'
 embedding_model_path = "models/bce-embedding-base_v1"
-model_path = "../LLModel/baichuan2-7B-base"
+current_path = os.path.dirname(sys.path[0])
+model_path = os.path.join(current_path, "LLModel/baichuan2-7B-chat")
 chroma_path = "dataset/"
+rerank_model_path = os.path.join(current_path, "LLModel/bce-reranker-base_v1")
+RERANK_TOP_K = 3
 
 ### 切分chunk
 loader = TextLoader(text_path, encoding='utf-8') # 读取Documents格式
@@ -65,7 +70,7 @@ class bceEmbeddingFunction(EmbeddingFunction[Documents]):
 bce_embedding_function = bceEmbeddingFunction(embedding_model_path)
 
 ### 可以用client设计pipeline
-chroma_client = chromadb.PersistentClient(chroma_path)
+chroma_client = chromadb.Client()
 chroma_collection = chroma_client.create_collection(text_name, embedding_function=bce_embedding_function) # 设定文件名(我用文件路径代替)、embedding函数
 ids = [str(i) for i in range(len(token_docs))]
 chroma_collection.add(ids=ids, documents=token_docs) # 添加ids和切分文件，尺寸要一致
@@ -80,7 +85,7 @@ def retrievel(query, n_results=3):
     """
     results = chroma_collection.query(query_texts=query, n_results=n_results, include=['documents', 'embeddings']) # 这里面塞query、embedding，都行，反正embedding_function已经给了
     return results
-query = "萧强的老婆是谁"
+query = "主角名字是什么？年龄多大？是否有其他名字？"
 retrievel_docs = retrievel(query)
 print(retrievel_docs['documents'])
 
@@ -89,18 +94,46 @@ def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
     message = hypothetical_answer_template(query)
     ret = model.chat(tokenizer, message)
     return ret 
-model, tokenizer = init_model(model_path) # get model
-hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
-retrievel_docs = retrievel(f'{query} {hypothetical_answer}')
-print(retrievel_docs['documents'])
+# model, tokenizer = init_model(model_path) # get model
+# hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
+# retrievel_docs = retrievel(f'{query} {hypothetical_answer}')
+# print(retrievel_docs['documents'])
 
+# 你还可以生成多个表述不同的问题
 def additional_query_generation(query: str, model, tokenizer) -> str:
     message = additional_query_template(query)
     ret = model.chat(tokenizer, message)
     return ret
-additional_query = additional_query_generation(query, model, tokenizer)
-retrievel_docs = retrievel(additional_query)
-print(retrievel_docs['documents'])
+# additional_query = additional_query_generation(query, model, tokenizer)
+# retrievel_docs = retrievel(additional_query)
+# print(retrievel_docs['documents'])
+
+# 自定义本地rerank model
+class bceRerankFunction:
+    def __init__(self, path : str):
+        # Load model directly
+        self.tokenizer = AutoTokenizer.from_pretrained(path)
+        self.model = AutoModelForSequenceClassification.from_pretrained(path)
+
+    def __call__(self, docs):
+        print(docs)
+        input = self.tokenizer(docs, padding=True, truncation=True, return_tensors="pt").items()
+        input = {k:v for k,v in input}
+        print("——————————————")
+        print(input)
+        scores = self.model(**input, return_dict=True).logits.view(-1,).float()
+        scores = torch.sigmoid(scores)
+        print("——————————————")
+        print(scores)
+        return scores
+    
+reranker = bceRerankFunction(rerank_model_path)
+text_docs = [[query, doc] for doc in retrievel_docs['documents'][0]]
+rerank_score = reranker(text_docs)
+print("——————rerank score:", rerank_score)
+rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
+rerank_topk = [doc for doc, score in rerank_docs[:RERANK_TOP_K]]
+print("——————rerank_topk:", rerank_topk)
 
 # Augment Generation
 def augment_generation(query: str, retrievel_docs: list, model, tokenizer) -> str:
@@ -108,11 +141,15 @@ def augment_generation(query: str, retrievel_docs: list, model, tokenizer) -> st
     message = RAG_template_for_baichuan(query, information)
     response = model.chat(tokenizer, message)
     return response 
-response = augment_generation(query, retrievel_docs, model, tokenizer)
+model, tokenizer = init_model(model_path)
+response = augment_generation(query, rerank_topk, model, tokenizer)
 print(response)
 
 
+
     
+
+
 
 
 
