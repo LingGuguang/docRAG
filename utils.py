@@ -99,3 +99,5 @@ class baichuan2LLM(LLM):
         response= self.model.chat(self.tokenizer, messages)
         print("response_from_call:",response)
         return response
+    
+
