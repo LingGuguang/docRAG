@@ -1,17 +1,8 @@
 # Load model directly
 from utils import * 
 import torch
-from typing import Any, List, Optional
-from langchain.callbacks.manager import CallbackManagerForLLMRun
-from langchain.llms.base import LLM
-from transformers import AutoModelForCausalLM, GenerationConfig, AutoTokenizer, AutoModel, AutoModelForSequenceClassification
-
-from langchain.text_splitter import RecursiveCharacterTextSplitter, SentenceTransformersTokenTextSplitter
-from langchain_community.document_loaders import TextLoader
-
+from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import chromadb 
-from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
-from typing import cast 
 
 import os, sys
 

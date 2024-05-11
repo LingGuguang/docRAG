@@ -1,11 +1,7 @@
 
 from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
-from transformers import AutoModelForCausalLM, GenerationConfig, AutoTokenizer, AutoModel, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModel
 from typing import cast 
-
-
-
-
 
 class bceEmbeddingFunction(EmbeddingFunction[Documents]):
     def __init__(self, path : str):
