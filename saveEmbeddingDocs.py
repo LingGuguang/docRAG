@@ -49,7 +49,7 @@ token_docs = []
 for doc in split_docs:
     token_docs += text_splitter.split_text(doc)
 save_text(save_docs_path, token_docs)
-assert(1==0)
+
 
 ### 使用chromadb自带的embedding_function
 ### 很垃圾，别用，很多token根本不识别
