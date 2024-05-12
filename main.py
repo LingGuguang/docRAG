@@ -89,7 +89,7 @@ class docRAG:
 
         # if not self.model or not self.tokenizer:
         #     self.model, self.tokenizer = init_model(self.model_path)
-        response = self.augment_generation(query, rerank_topk_docs, model, tokenizer)
+        response = self.augment_generation(query, rerank_topk_docs)
 
         return response
     
