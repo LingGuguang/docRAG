@@ -14,12 +14,12 @@ from typing import Any, List, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 
-def read_text(path):
+def read_text(path: str, split_line: bool=False):
     with open(path, 'r', encoding='utf-8') as f:
         text = f.read()
-    return text
+    return re.split(r'\n', text) if split_line else text
 
-def read_json(path):
+def read_json(path: str):
     with open(path, 'r', encoding='utf-8') as f:
         ret = json.load(f)
     return ret
@@ -29,9 +29,11 @@ def save_json(path, dic):
     with open(path,"w", encoding='utf-8') as f: 
         f.write(json.dumps(dic,ensure_ascii=False, indent=2)) 
 
-def save_txt(path, dic):
+def save_text(path, docs:List[str]):
     with open(path, 'w+', encoding='utf-8') as f:
-        f.write(dic)
+        for doc in docs:
+            f.write(doc)
+            f.write('\n')
 
 def init_model(path):
     # Load model directly

@@ -10,6 +10,7 @@ from typing import cast
 
 import os
 from tqdm import tqdm
+from utils import save_text
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -17,15 +18,17 @@ from llm import bceEmbeddingFunction
 
 ### 设定文本
 text_name = '史上第一混乱重排版.txt'
+save_split_docs = '史上第一混乱碎片版.txt'
 chromadb_name_for_save = "chaos_history"
 text_path = f'dataset/{text_name}'
+save_docs_path = f'dataset/{save_split_docs}'
 embedding_model_path = "models/bce-embedding-base_v1"
 chroma_path = "dataset/"
 
 ### 切分chunk
 loader = TextLoader(text_path, encoding='utf-8') # 读取Documents格式
 docs = loader.load() # 读取Documents格式，服务于split_documents()
-docs = read_text(text_path) # 读取string，服务于split_text()
+docs = read_text(text_path, split_line=False) # 读取string，服务于split_text()
 
 # 一般来说，用RecursiveCharacterTextSplitter把大段的文字粗略地分割成块。这里不要求那么多，只希望章节类文字能大致分开，章节内只需琐碎分开就行。
 print("split doc 1/2...")
@@ -45,6 +48,8 @@ text_splitter = SentenceTransformersTokenTextSplitter(
 token_docs = [] 
 for doc in split_docs:
     token_docs += text_splitter.split_text(doc)
+save_text(save_docs_path, token_docs)
+assert(1==0)
 
 ### 使用chromadb自带的embedding_function
 ### 很垃圾，别用，很多token根本不识别

@@ -9,17 +9,14 @@ class BM25Model:
         # corpus : list of list of str
         self.corpus = self.load_corpus()
 
-    def bm25_similarity(self, query, num_best=1):
+    def topk(self, query, k=1) -> List[str]:
         query = jieba.lcut(query)  # 分词
         bm = BM25Okapi(self.corpus)
         scores = bm.get_scores(query)
-        id_score = [(i, score) for i, score in enumerate(scores)]
-        # 我需要一个小顶堆替代下面的排序[TODO]
-        topk_scores, topk_ids = torch.topk(torch.Tensor(scores), k=num_best)
-        # id_score.sort(key=lambda e: e[1], reverse=True)
-        return scores[list(topk_ids)]
+        topk_scores, topk_ids = torch.topk(torch.Tensor(scores), k=k)
+        return self.data_list[list(topk_ids)]
 
-    def load_corpus(self):
+    def load_corpus(self) -> List[List[str]]:
         corpus = [jieba.lcut(data) for data in self.data_list]
         return corpus
 
