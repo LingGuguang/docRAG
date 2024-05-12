@@ -3,12 +3,14 @@ from utils import *
 import torch
 from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import chromadb 
-
 import os, sys
-
 from llm import bceEmbeddingFunction
 
+from argparser import main_argparser
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+parser = main_argparser()
 
 ### 设定文本
 text_name = '史上第一混乱重排版.txt'
@@ -40,29 +42,32 @@ def retrievel(query, collection ,n_results=3):
             get：   筛选查找。ids是你给每个文档片段准备的ids，你可以通过ids获取对应的文档片段。每个片段允许有一些元数据(类型、作者之类的)，你可以用它来筛选。
     """
     results = collection.query(query_texts=query, n_results=n_results, include=['documents', 'embeddings']) # 这里面塞query、embedding，都行，反正embedding_function已经给了
-    return results
+    return results['documents'][0]
 query = "荆轲是什么样的形象？"
 retrievel_docs = retrievel(query, chroma_collection, RETRIEVEL_NUMS)
-print("retrievel docs: ", retrievel_docs['documents'])
+print("retrievel docs: ", retrievel_docs)
 
 # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
 def hypothetical_answer_generation(query: str, model, tokenizer) -> str:
     message = hypothetical_answer_template(query)
     ret = model.chat(tokenizer, message)
     return ret 
-# model, tokenizer = init_model(model_path) # get model
-# hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
-# retrievel_docs = retrievel(f'{query} {hypothetical_answer}')
-# print(retrievel_docs['documents'])
+if parser.hypocritical_answer:
+    model, tokenizer = init_model(model_path) # get model
+    hypothetical_answer = hypothetical_answer_generation(query, model, tokenizer)
+    retrievel_docs += retrievel(f'{query} {hypothetical_answer}', chroma_collection)
+    print(retrievel_docs)
 
 # 你还可以生成多个表述不同的问题
-def additional_query_generation(query: str, model, tokenizer) -> str:
-    message = additional_query_template(query)
+def additional_query_generation(query: str, model, tokenizer, query_nums:int=1) -> str:
+    message = additional_query_template(query, query_nums)
     ret = model.chat(tokenizer, message)
     return ret
-# additional_query = additional_query_generation(query, model, tokenizer)
-# retrievel_docs = retrievel(additional_query)
-# print(retrievel_docs['documents'])
+if int(parser.additional_query):
+    model, tokenizer = init_model(model_path) # get model
+    additional_query = additional_query_generation(query, model, tokenizer, int(parser.additional_query))
+    retrievel_docs += retrievel(additional_query, chroma_collection)
+    print(retrievel_docs)
 
 # 自定义本地rerank model
 class bceRerankFunction:
@@ -79,7 +84,7 @@ class bceRerankFunction:
         return scores
     
 reranker = bceRerankFunction(rerank_model_path)
-text_docs = [[query, doc] for doc in retrievel_docs['documents'][0]]
+text_docs = [[query, doc] for doc in retrievel_docs[0]]
 rerank_score = reranker(text_docs)
 print("——————rerank score:", rerank_score)
 rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)

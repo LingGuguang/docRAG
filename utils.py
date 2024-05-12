@@ -72,10 +72,17 @@ def hypothetical_answer_template(query: str) -> str:
     return system, question
 
 @baichuan_wrapper
-def additional_query_template(query: str) -> str:
-    system = '你是著名的网络小说作者。你的观众向你提出了一个与小说剧情有关的问题。你需要编写一段文风符合下述小说类型的小说片段，要求小说片段中的信息足以解答观众的问题。'
+def additional_query_template(query: str, query_nums: int=1) -> str:
+    system = f'下面将提供给你一个问题，你需要根据问题重写{query_nums}个意思相同但是表述不同的问题。要求重写的方式尽可能地有差别。你需要按照json格式输出这些问题，在key中给出编号，在value中给出重写的问题。'
+    output = """```json格式
+{
+    0 : 重写的问题0
+    1 : 重写的问题1
+    ...   
+}  
+    """
     question = f'问题：{query}?\n\n小说类型：都市玄幻、穿越\n\n小说片段：'
-    return system, question
+    return system+output, question
 
 class baichuan2LLM(LLM):
     model: AutoModelForCausalLM = None 
