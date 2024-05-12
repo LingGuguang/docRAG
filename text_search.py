@@ -14,7 +14,7 @@ class BM25Model:
         bm = BM25Okapi(self.corpus)
         scores = bm.get_scores(query)
         topk_scores, topk_ids = torch.topk(torch.Tensor(scores), k=k)
-        return self.data_list[list(topk_ids)]
+        return [self.data_list[id] for id in topk_ids]
 
     def load_corpus(self) -> List[List[str]]:
         corpus = [jieba.lcut(data) for data in self.data_list]
