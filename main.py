@@ -11,10 +11,6 @@ from text_search import BM25Model
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-
-
-
-
 # 自定义本地rerank model
 class bceRerankFunction:
     def __init__(self, path : str):
@@ -28,7 +24,6 @@ class bceRerankFunction:
         scores = self.model(**input, return_dict=True).logits.view(-1,).float()
         scores = torch.sigmoid(scores)
         return scores
-
 
 class docRAG:
     parser = main_argparser()
@@ -133,8 +128,11 @@ class docRAG:
 
 rag = docRAG()
 while True:
-    query = input("input query: ")
-    if query.strip() == "exit":
-        break
-    request = rag.run(query)
-    print("response:", request + '\n')
+    try:
+        query = input("input query: ")
+        if query.strip() == "exit":
+            break
+        request = rag.run(query)
+        print("response:", request + '\n')
+    except:
+        print('wrong token.')
