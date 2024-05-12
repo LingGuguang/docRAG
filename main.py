@@ -45,7 +45,8 @@ class docRAG:
     chroma_path = "dataset/"
 
     RERANK_TOP_K = 3
-    RETRIEVEL_NUMS=3
+    BM25_NUMS = 3
+    RETRIEVEL_NUMS = 3    
 
     ### 自定义本地embedding_function
     print("bce embedding is running...")    
@@ -66,31 +67,23 @@ class docRAG:
         # print("retrievel docs: ", retrievel_docs)
 
         bm25 = BM25Model(self.docs)
-        retrievel_docs += self.retrievel_BM25(query, bm25)
+        retrievel_docs += self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS)
         if self.parser.hypocritical_answer:
-            # if not self.model or not self.tokenizer:
-            #     self.model, self.tokenizer = init_model(self.model_path) # get model
             hypothetical_answer = self.hypothetical_answer_generation(query)
             retrievel_docs += self.retrievel(f'{query} {hypothetical_answer}')
             # print(retrievel_docs)
         if int(self.parser.additional_query):
-            # if not self.model or not self.tokenizer:
-            #     model, tokenizer = init_model(self.model_path) # get model
             additional_query = self.additional_query_generation(query, int(self.parser.additional_query))
             retrievel_docs += self.retrievel(additional_query)
             # print(retrievel_docs)
 
         text_docs = [[query, doc] for doc in list(set(retrievel_docs))]
         rerank_score = self.reranker(text_docs)
-        # print("——————rerank score:", rerank_score)
+        
         rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
         rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
-        # print("——————rerank_topk_docs:", rerank_topk_docs)
 
-        # if not self.model or not self.tokenizer:
-        #     self.model, self.tokenizer = init_model(self.model_path)
         response = self.augment_generation(query, rerank_topk_docs)
-
         return response
     
     # Retrievel
@@ -122,7 +115,6 @@ class docRAG:
         ret = self.model.chat(self.tokenizer, message)
         return ret 
 
-
     # 你还可以生成多个表述不同的问题
     @model_check
     def additional_query_generation(self, query: str, query_nums:int=1) -> str:
@@ -140,10 +132,9 @@ class docRAG:
 
 
 rag = docRAG()
-
 while True:
     query = input("input query: ")
     if query.strip() == "exit":
         break
     request = rag.run(query)
-    print(request + '\n')
+    print("response:", request + '\n')
