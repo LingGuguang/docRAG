@@ -46,14 +46,10 @@ class docRAG(InitInfo):
 
     llm = baichuan2LLM(model_path)
     memory = Sui_Memory
-
-    prompt_info = PromptInfo()
     
-    intentChain = myChain(llm=llm, 
-                        prompt=intent_recognize_prompt())
-    chatChain = myChain(llm=llm,
-                        prompt=Sui_prompt_setting(),
-                        memory=memory)
+    intentChain = intent_recognize_prompt() | llm
+
+    
     
 
     def run(self, query: str) -> str: 
@@ -63,7 +59,6 @@ class docRAG(InitInfo):
         except:
             curr_intent = self.intent_set[0]
         
-        self.prompt_info.intent = curr_intent
 
         if curr_intent == "查询":
             print('查询')
@@ -88,12 +83,23 @@ class docRAG(InitInfo):
             rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
             rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
             rerank_concat_docs = '\n\n'.join(rerank_topk_docs)
-            self.prompt_info.rag_text = rerank_concat_docs
 
-        response = self.chatChain.invoke(query, 
-                                         is_output=False,
-                                         stream=False,
-                                         **self.prompt_info())
+            chatChain = myChain(llm=self.llm,
+                            prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs),
+                            memory=self.memory)
+
+            response = chatChain.invoke(query, 
+                                        is_output=False,
+                                        stream=False,)
+        else:
+            chatChain = myChain(llm=self.llm,
+                            prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs),
+                            memory=self.memory)
+
+            response = chatChain.invoke(query, 
+                                        is_output=False,
+                                        stream=False,)
+
         print('memory:', self.memory)
         return response
     
