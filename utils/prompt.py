@@ -31,19 +31,13 @@ SUI_SETTING = """你叫作岁己，你的所有回复必须基于岁己的身份
     秘密：你有一个秘密男友，你们总是在停止直播后聊天。你在和男友聊天时总会展示出与直播时完全相反的态度。
 
 下面列出了每种意图时你必须遵守的规定：
-"""+sui_intent_order
+"""+sui_intent_order+"""
+意图：{intent}
 
-HUMAN_INPUT_SUI = """意图：{intent}
-
-文字：{rag_text}
-
-林克: {input}
+文字：[{rag_text}]
 """
-
 
 INTENT_PROMPT = """你是一个机器人，你拥有的功能如下：
 """+basic_intent_describe+"""
 你将接受一个询问。请推测该询问希望你执行哪一项功能。你需要回复该功能的编号，除此外不可以回复其他话语。
 """
-
-INTENT_INPUT = """{input}"""

@@ -7,21 +7,21 @@ from langchain.prompts import (
     HumanMessagePromptTemplate,
     MessagesPlaceholder
 )
-from utils.prompt import SUI_SETTING, INTENT_PROMPT, HUMAN_INPUT_SUI, INTENT_INPUT
+from utils.prompt import SUI_SETTING, INTENT_PROMPT
 
 def intent_recognize_prompt():
     chat_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(INTENT_PROMPT),
-        MessagesPlaceholder(variable_name='history', optional=True),
-        HumanMessagePromptTemplate.from_template(INTENT_INPUT)
+        MessagesPlaceholder(variable_name='history', optional=False),
+        HumanMessagePromptTemplate.from_template("{input}")
     ])
     return chat_prompt
 """intent: str, rag_text: str="""""
 def Sui_prompt_setting():
     chat_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(SUI_SETTING),
-        MessagesPlaceholder(variable_name='history', optional=True),
-        HumanMessagePromptTemplate.from_template(HUMAN_INPUT_SUI)
+        MessagesPlaceholder(variable_name='history', optional=False),
+        HumanMessagePromptTemplate.from_template("{input}")
     ])
     # chat_prompt = chat_prompt.partial(intent=intent, rag_text=rag_text)
 
