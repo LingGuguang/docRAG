@@ -93,7 +93,7 @@ class docRAG(InitInfo):
                                         stream=False,)
         else:
             chatChain = myChain(llm=self.llm,
-                            prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs),
+                            prompt=Sui_prompt_setting(intent=curr_intent),
                             memory=self.memory)
 
             response = chatChain.invoke(query, 
