@@ -90,6 +90,7 @@ class docRAG(InitInfo):
             self.prompt_info.rag_text = rerank_concat_docs
 
         response = self.SUI(query)
+        print('memory:', self.memory)
         return response
     
     # Retrievel
@@ -135,9 +136,9 @@ class docRAG(InitInfo):
         # message = RAG_template_for_baichuan(query, information)
         # response = self.model.chat(self.tokenizer, message)
         chatChain = myChain(llm=self.llm,
-                        prompt=Sui_prompt_setting(),
+                        prompt=Sui_prompt_setting(**self.prompt_info()),
                         memory=self.memory)
-        response = chatChain.invoke(query, **self.prompt_info())
+        response = chatChain.invoke(query, )
 
         return response 
     

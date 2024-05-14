@@ -67,10 +67,10 @@ class myChain:
             # input_key="input", # 设置conversation的新输入的占位符
         )
 
-    def invoke(self, query: str, is_output: bool=False, stream: bool=False):
+    def invoke(self, query: str, is_output: bool=False, stream: bool=False, **kwargs: Any):
         if stream:
             position = 0
-            for response in self.llm_chain.invoke(input=query, stream=stream):
+            for response in self.llm_chain.invoke(input=query, stream=stream, **kwargs):
                 if is_output:
                     print(response[position:], end='', flush=True)
                 position = len(response)
@@ -78,7 +78,7 @@ class myChain:
                     torch.mps.empty_cache()
             return response
         else:
-            response = self.llm_chain.invoke(input=query, return_only_outputs=True)
+            response = self.llm_chain.invoke(input=query, return_only_outputs=True, **kwargs)
             if is_output:
                 print(response['output'])
             if torch.backends.mps.is_available():
