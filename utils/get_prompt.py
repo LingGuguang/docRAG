@@ -16,13 +16,13 @@ def intent_recognize_prompt():
         HumanMessagePromptTemplate.from_template(INTENT_INPUT)
     ])
     return chat_prompt
-
-def Sui_prompt_setting(intent: str, rag_text: str=""):
+"""intent: str, rag_text: str="""""
+def Sui_prompt_setting():
     chat_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(SUI_SETTING),
         MessagesPlaceholder(variable_name='history', optional=True),
         HumanMessagePromptTemplate.from_template(SUI_INPUT)
     ])
-    chat_prompt = chat_prompt.partial(intent=intent, rag_text=rag_text)
+    # chat_prompt = chat_prompt.partial(intent=intent, rag_text=rag_text)
 
     return chat_prompt
