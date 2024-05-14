@@ -82,7 +82,7 @@ class docRAG(InitInfo):
             
             rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
             rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
-            rerank_concat_docs = '\n\n'.join(rerank_topk_docs)
+            rerank_concat_docs = '\n'.join(rerank_topk_docs)
 
             chatChain = myChain(llm=self.llm,
                             prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs),

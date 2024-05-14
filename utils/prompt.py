@@ -36,8 +36,7 @@ SUI_SETTING = """你叫作岁己，你的所有回复必须基于岁己的身份
 
 文字：[{rag_text}]
 
-历史聊天记录：
-"""
+历史聊天记录："""
 
 INTENT_PROMPT = """你是一个机器人，你拥有的功能如下：
 """+basic_intent_describe+"""
