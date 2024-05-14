@@ -56,10 +56,10 @@ class docRAG(InitInfo):
                          prompt=intent_recognize_prompt())
         curr_intent = intentChain.invoke(query)
         try:
-            curr_intent = int(curr_intent)
+            curr_intent = self.intent_set[int(curr_intent)]
         except:
-            curr_intent = 1
-        curr_intent = self.intent_set[curr_intent]
+            curr_intent = self.intent_set[1]
+        
         self.prompt_info.intent = curr_intent
 
         if curr_intent == "查询":
