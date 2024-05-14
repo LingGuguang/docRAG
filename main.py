@@ -53,7 +53,6 @@ class docRAG(InitInfo):
 
     def run(self, query: str) -> str: 
         intentChain = myChain(llm=self.llm, 
-                              memory=self.memory,
                             prompt=intent_recognize_prompt())
         curr_intent = intentChain.invoke(query)
         print(self.intent_set)
@@ -136,9 +135,9 @@ class docRAG(InitInfo):
         # message = RAG_template_for_baichuan(query, information)
         # response = self.model.chat(self.tokenizer, message)
         chatChain = myChain(llm=self.llm,
-                        prompt=Sui_prompt_setting(**self.prompt_info()),
+                        prompt=Sui_prompt_setting(),
                         memory=self.memory)
-        response = chatChain.invoke(query, )
+        response = chatChain.invoke(query, **self.prompt_info())
 
         return response 
     
