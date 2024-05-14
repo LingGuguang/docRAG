@@ -9,7 +9,7 @@ from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM
 from argparser import main_argparser
 from text_search import BM25Model
 from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
-from utils.get_memory import SUI_MEMORY
+from utils.get_memory import Sui_Memory
 from init_info import InitInfo, PromptInfo
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -45,7 +45,7 @@ class docRAG(InitInfo):
     reranker = bceRerankFunction(rerank_model_path)
 
     llm = baichuan2LLM(model_path)
-    memory = SUI_MEMORY
+    memory = Sui_Memory
 
     prompt_info = PromptInfo()
     
@@ -87,9 +87,6 @@ class docRAG(InitInfo):
             self.prompt_info.rag_text = rerank_concat_docs
 
         response = self.SUI(query)
-        chatChain = myChain(llm=self.llm,
-                        prompt=Sui_prompt_setting(curr_intent),
-                        memory=self.memory)
         return response
     
     # Retrievel
