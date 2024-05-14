@@ -49,7 +49,10 @@ class baichuan2LLM(LLM):
         response= self.model.chat(self.tokenizer, messages)
         print("response_from_call:",response)
         return response
-    
+
+    @property
+    def _llm_type(self) -> str:
+        return "baichuan2_LLM"
 
 class myChain:
     llm_chain = None
@@ -90,7 +93,7 @@ class bceRerankFunction:
         self.tokenizer = AutoTokenizer.from_pretrained(path)
         self.model = AutoModelForSequenceClassification.from_pretrained(path)
 
-    def __call__(self, docs):
+    def run(self, docs):
         input = self.tokenizer(docs, padding=True, truncation=True, return_tensors="pt").items()
         input = {k:v for k,v in input}
         scores = self.model(**input, return_dict=True).logits.view(-1,).float()
