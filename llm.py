@@ -71,7 +71,7 @@ class myChain:
         print(kwargs)
         if stream:
             position = 0
-            for response in self.llm_chain.invoke(query, kwargs, stream=stream):
+            for response in self.llm_chain.invoke(input=query, kwargs=kwargs, stream=stream):
                 if is_output:
                     print(response[position:], end='', flush=True)
                 position = len(response)
@@ -79,7 +79,7 @@ class myChain:
                     torch.mps.empty_cache()
             return response
         else:
-            response = self.llm_chain.invoke(query, kwargs, return_only_outputs=True)
+            response = self.llm_chain.invoke(input=query, kwargs=kwargs, return_only_outputs=True)
             if is_output:
                 print(response['output'])
             if torch.backends.mps.is_available():
