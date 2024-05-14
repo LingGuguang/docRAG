@@ -57,7 +57,6 @@ class docRAG(InitInfo):
     
 
     def run(self, query: str) -> str: 
-        self.prompt_info.query = query
         curr_intent = self.intentChain.invoke(query)
         try:
             curr_intent = self.intent_set[int(curr_intent)]
@@ -91,7 +90,10 @@ class docRAG(InitInfo):
             rerank_concat_docs = '\n\n'.join(rerank_topk_docs)
             self.prompt_info.rag_text = rerank_concat_docs
 
-        response = self.chatChain.invoke(query, **self.prompt_info())
+        response = self.chatChain.invoke(query, 
+                                         is_output=False,
+                                         stream=False,
+                                         **self.prompt_info())
         print('memory:', self.memory)
         return response
     
