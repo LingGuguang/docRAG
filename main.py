@@ -49,12 +49,17 @@ class docRAG(InitInfo):
 
     prompt_info = PromptInfo()
     
+
+    
+    intentChain = myChain(llm=llm, 
+                        prompt=intent_recognize_prompt())
+    chatChain = myChain(llm=llm,
+                    prompt=Sui_prompt_setting(),
+                    memory=memory)
     
 
     def run(self, query: str) -> str: 
-        intentChain = myChain(llm=self.llm, 
-                            prompt=intent_recognize_prompt())
-        curr_intent = intentChain.invoke(query)
+        curr_intent = self.intentChain.invoke(query)
         print(self.intent_set)
         try:
             curr_intent = self.intent_set[int(curr_intent)]
@@ -88,7 +93,7 @@ class docRAG(InitInfo):
             rerank_concat_docs = '\n\n'.join(rerank_topk_docs)
             self.prompt_info.rag_text = rerank_concat_docs
 
-        response = self.SUI(query)
+        response = self.chatChain.invoke(query, **self.prompt_info())
         print('memory:', self.memory)
         return response
     
@@ -128,18 +133,6 @@ class docRAG(InitInfo):
         ret = self.model.chat(self.tokenizer, message)
         return ret
     
-    # Augment Generation
-
-    def SUI(self, query: str) -> str:
-        
-        # message = RAG_template_for_baichuan(query, information)
-        # response = self.model.chat(self.tokenizer, message)
-        chatChain = myChain(llm=self.llm,
-                        prompt=Sui_prompt_setting(),
-                        memory=self.memory)
-        response = chatChain.invoke(query, **self.prompt_info())
-
-        return response 
     
     def get_Sui(self, path: str):
         model = AutoModelForCausalLM.from_pretrained(path,
