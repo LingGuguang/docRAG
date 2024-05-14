@@ -10,7 +10,7 @@ from argparser import main_argparser
 from text_search import BM25Model
 from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
 from utils.get_memory import Sui_Memory
-from init_info import InitInfo, PromptInfo
+from init_info import InitInfo
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
