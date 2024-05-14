@@ -155,11 +155,16 @@ class docRAG(InitInfo):
 
 rag = docRAG()
 while True:
-    try:
-        query = input("input query: ")
-        if query.strip() == "exit":
-            break
-        response = rag.run(query)
-        print("response:", response + '\n')
-    except:
-        print('wrong token.')
+    # try:
+    #     query = input("input query: ")
+    #     if query.strip() == "exit":
+    #         break
+    #     response = rag.run(query)
+    #     print("response:", response + '\n')
+    # except:
+    #     print('wrong token.')
+    query = input("input query: ")
+    if query.strip() == "exit":
+        break
+    response = rag.run(query)
+    print("response:", response + '\n')
