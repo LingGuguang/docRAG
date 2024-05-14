@@ -53,7 +53,8 @@ class docRAG(InitInfo):
 
     def run(self, query: str) -> str: 
         intentChain = myChain(llm=self.llm, 
-                         prompt=intent_recognize_prompt())
+                              memory=self.memory,
+                            prompt=intent_recognize_prompt())
         curr_intent = intentChain.invoke(query)
         print(self.intent_set)
         try:
