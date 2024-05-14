@@ -10,7 +10,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig, 
 from utils.get_prompt import Sui_prompt_setting, intent_recognize_prompt
 
 from langchain.chains.conversation.base import LLMChain
-from init_info import PromptInfo
+
 
 
 class bceEmbeddingFunction(EmbeddingFunction[Documents]):
