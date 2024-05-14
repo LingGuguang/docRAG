@@ -49,18 +49,16 @@ class docRAG(InitInfo):
 
     prompt_info = PromptInfo()
     
-
-    
     intentChain = myChain(llm=llm, 
                         prompt=intent_recognize_prompt())
     chatChain = myChain(llm=llm,
-                    prompt=Sui_prompt_setting(),
-                    memory=memory)
+                        prompt=Sui_prompt_setting(),
+                        memory=memory)
     
 
     def run(self, query: str) -> str: 
+        self.prompt_info.query = query
         curr_intent = self.intentChain.invoke(query)
-        print(self.intent_set)
         try:
             curr_intent = self.intent_set[int(curr_intent)]
         except:
@@ -133,20 +131,7 @@ class docRAG(InitInfo):
         ret = self.model.chat(self.tokenizer, message)
         return ret
     
-    
-    def get_Sui(self, path: str):
-        model = AutoModelForCausalLM.from_pretrained(path,
-                                                    torch_dtype=torch.float16,
-                                                    device_map="auto",
-                                                    trust_remote_code=True
-                                                    )
-        model.generation_config = GenerationConfig.from_pretrained(path)
-        tokenizer = AutoTokenizer.from_pretrained(
-            path,
-            use_fast=False,
-            trust_remote_code=True, 
-        )
-        return model, tokenizer
+
 
 
 rag = docRAG()

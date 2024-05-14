@@ -9,5 +9,6 @@ class InitInfo:
 class PromptInfo:
     rag_text = None 
     intent = None 
+
     def __call__(self):
         return self.__dict__
