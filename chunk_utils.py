@@ -1,7 +1,7 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
 
-from utils import * 
+from utils.basic_utils import * 
 import re 
 
 

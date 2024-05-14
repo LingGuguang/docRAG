@@ -1,5 +1,5 @@
 # Load model directly
-from utils import * 
+from utils.basic_utils import * 
 
 from transformers import  AutoTokenizer, AutoModel
 from langchain.text_splitter import RecursiveCharacterTextSplitter, SentenceTransformersTokenTextSplitter
@@ -10,7 +10,7 @@ from typing import cast
 
 import os
 from tqdm import tqdm
-from utils import save_text
+from utils.basic_utils import save_text
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
