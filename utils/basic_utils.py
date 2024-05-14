@@ -10,7 +10,7 @@ from langchain.prompts import (
     MessagesPlaceholder
 )
 import torch
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 
@@ -19,7 +19,7 @@ def read_text(path: str, split_line: bool=False):
         text = f.read()
     return re.split(r'\n', text) if split_line else text
 
-def read_json(path: str):
+def read_json(path: str) -> Dict:
     with open(path, 'r', encoding='utf-8') as f:
         ret = json.load(f)
     return ret
@@ -37,7 +37,7 @@ def save_text(path, docs:List[str]):
 
 def init_model(path):
     # Load model directly
-    print("init model ...")
+    # print("init model ...")
     model = AutoModelForCausalLM.from_pretrained(
         path,
         torch_dtype=torch.float16,
@@ -86,27 +86,5 @@ def additional_query_template(query: str, query_nums: int=1) -> str:
     question = f'问题：{query}?\n\n小说类型：都市玄幻、穿越\n\n小说片段：'
     return system+output, question
 
-class baichuan2LLM(LLM):
-    model: AutoModelForCausalLM = None 
-    tokenizer: AutoTokenizer = None
-    def __init__(self, model_path: str):
-        super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True, torch_dtype=torch.bfloat16, device_map="auto")
-        self.model.generation_config = GenerationConfig.from_pretrained(model_path)
-        self.model = self.model.eval()
 
-    def _call(self, prompt:str, stream:bool=False,
-            stop: Optional[List[str]] = None,
-            run_manager: Optional[CallbackManagerForLLMRun] = None,
-            **kwargs: Any):
-        # print('prompt:', prompt)
-        messages = [
-            {"role": "user", "content": prompt}
-        ]
-         # 重写调用函数
-        response= self.model.chat(self.tokenizer, messages)
-        print("response_from_call:",response)
-        return response
-    
 

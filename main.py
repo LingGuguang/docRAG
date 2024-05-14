@@ -1,31 +1,20 @@
 # Load model directly
-from utils import * 
+from utils.basic_utils import * 
 import torch
 from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import chromadb 
 import os, sys
-from llm import bceEmbeddingFunction
+from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM
 
 from argparser import main_argparser
 from text_search import BM25Model
+from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
+from utils.get_memory import SUI_MEMORY
+from init_info import InitInfo, PromptInfo
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# 自定义本地rerank model
-class bceRerankFunction:
-    def __init__(self, path : str):
-        # Load model directly
-        self.tokenizer = AutoTokenizer.from_pretrained(path)
-        self.model = AutoModelForSequenceClassification.from_pretrained(path)
-
-    def __call__(self, docs):
-        input = self.tokenizer(docs, padding=True, truncation=True, return_tensors="pt").items()
-        input = {k:v for k,v in input}
-        scores = self.model(**input, return_dict=True).logits.view(-1,).float()
-        scores = torch.sigmoid(scores)
-        return scores
-
-class docRAG:
+class docRAG(InitInfo):
     parser = main_argparser()
 
     ### 设定文本
@@ -55,30 +44,52 @@ class docRAG:
     docs = read_text(docs_path, split_line=True)
     reranker = bceRerankFunction(rerank_model_path)
 
-    model, tokenizer = None, None # get model
+    llm = baichuan2LLM(model_path)
+    memory = SUI_MEMORY
+
+    prompt_info = PromptInfo()
+    
+    
 
     def run(self, query: str) -> str: 
-        retrievel_docs = self.retrievel(query, n_results=self.RETRIEVEL_NUMS)
-        # print("retrievel docs: ", retrievel_docs)
+        intentChain = myChain(llm=self.llm, 
+                         prompt=intent_recognize_prompt())
+        curr_intent = intentChain.invoke(query)
+        try:
+            curr_intent = int(curr_intent)
+        except:
+            curr_intent = 1
+        curr_intent = self.intent_set[curr_intent]
+        self.prompt_info.intent = curr_intent
 
-        bm25 = BM25Model(self.docs)
-        retrievel_docs += self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS)
-        if self.parser.hypocritical_answer:
-            hypothetical_answer = self.hypothetical_answer_generation(query)
-            retrievel_docs += self.retrievel(f'{query} {hypothetical_answer}')
-            # print(retrievel_docs)
-        if int(self.parser.additional_query):
-            additional_query = self.additional_query_generation(query, int(self.parser.additional_query))
-            retrievel_docs += self.retrievel(additional_query)
-            # print(retrievel_docs)
+        if curr_intent == "查询":
+            
+            retrievel_docs = self.retrievel(query, n_results=self.RETRIEVEL_NUMS)
 
-        text_docs = [[query, doc] for doc in list(set(retrievel_docs))]
-        rerank_score = self.reranker(text_docs)
-        
-        rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
-        rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
+            bm25 = BM25Model(self.docs)
+            retrievel_docs += self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS)
+            
+            # if self.parser.hypocritical_answer:
+            #     hypothetical_answer = self.hypothetical_answer_generation(query)
+            #     retrievel_docs += self.retrievel(f'{query} {hypothetical_answer}')
+            #     # print(retrievel_docs)
+            # if int(self.parser.additional_query):
+            #     additional_query = self.additional_query_generation(query, int(self.parser.additional_query))
+            #     retrievel_docs += self.retrievel(additional_query)
+            #     # print(retrievel_docs)
 
-        response = self.augment_generation(query, rerank_topk_docs)
+            text_docs = [[query, doc] for doc in list(set(retrievel_docs))]
+            rerank_score = self.reranker.run(text_docs)
+            
+            rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
+            rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
+            rerank_concat_docs = '\n\n'.join(rerank_topk_docs)
+            self.prompt_info.rag_text = rerank_concat_docs
+
+        response = self.SUI(query)
+        chatChain = myChain(llm=self.llm,
+                        prompt=Sui_prompt_setting(curr_intent),
+                        memory=self.memory)
         return response
     
     # Retrievel
@@ -96,34 +107,53 @@ class docRAG:
         ret = model.topk(query, k=n_results)
         return ret
     
-    def model_check(func):
-        def wrapper(self, *args, **kwargs):
-            if not self.model or not self.tokenizer:
-                self.model, self.tokenizer = init_model(self.model_path)
-            return func(self, *args, **kwargs)
-        return wrapper
+    # def model_check(func):
+    #     def wrapper(self, *args, **kwargs):
+    #         if not self.model or not self.tokenizer:
+    #             self.model, self.tokenizer = init_model(self.model_path)
+    #         return func(self, *args, **kwargs)
+    #     return wrapper
 
     # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
-    @model_check
+
     def hypothetical_answer_generation(self, query: str) -> str:
         message = hypothetical_answer_template(query)
         ret = self.model.chat(self.tokenizer, message)
         return ret 
 
     # 你还可以生成多个表述不同的问题
-    @model_check
+
     def additional_query_generation(self, query: str, query_nums:int=1) -> str:
         message = additional_query_template(query, query_nums)
         ret = self.model.chat(self.tokenizer, message)
         return ret
     
     # Augment Generation
-    @model_check
-    def augment_generation(self, query: str, retrievel_docs: list) -> str:
-        information = '\n\n'.join(retrievel_docs)
-        message = RAG_template_for_baichuan(query, information)
-        response = self.model.chat(self.tokenizer, message)
+
+    def SUI(self, query: str) -> str:
+        
+        # message = RAG_template_for_baichuan(query, information)
+        # response = self.model.chat(self.tokenizer, message)
+        chatChain = myChain(llm=self.llm,
+                        prompt=Sui_prompt_setting(**self.prompt_info()),
+                        memory=self.memory)
+        response = chatChain.invoke(query)
+
         return response 
+    
+    def get_Sui(self, path: str):
+        model = AutoModelForCausalLM.from_pretrained(path,
+                                                    torch_dtype=torch.float16,
+                                                    device_map="auto",
+                                                    trust_remote_code=True
+                                                    )
+        model.generation_config = GenerationConfig.from_pretrained(path)
+        tokenizer = AutoTokenizer.from_pretrained(
+            path,
+            use_fast=False,
+            trust_remote_code=True, 
+        )
+        return model, tokenizer
 
 
 rag = docRAG()
@@ -132,7 +162,7 @@ while True:
         query = input("input query: ")
         if query.strip() == "exit":
             break
-        request = rag.run(query)
-        print("response:", request + '\n')
+        response = rag.run(query)
+        print("response:", response + '\n')
     except:
         print('wrong token.')

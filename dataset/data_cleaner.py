@@ -1,4 +1,4 @@
-from utils import *
+from utils.basic_utils import *
 
 ## 数据清洗
 txt = read_text("史上第一混乱——张小花.txt")
