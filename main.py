@@ -55,9 +55,11 @@ class docRAG(InitInfo):
         intentChain = myChain(llm=self.llm, 
                          prompt=intent_recognize_prompt())
         curr_intent = intentChain.invoke(query)
+        print(self.intent_set)
         try:
             curr_intent = self.intent_set[int(curr_intent)]
         except:
+            
             curr_intent = self.intent_set[1]
         
         self.prompt_info.intent = curr_intent
