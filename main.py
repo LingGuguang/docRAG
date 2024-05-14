@@ -60,11 +60,12 @@ class docRAG(InitInfo):
             curr_intent = self.intent_set[int(curr_intent)]
         except:
             
-            curr_intent = self.intent_set[1]
+            curr_intent = self.intent_set[0]
         
         self.prompt_info.intent = curr_intent
 
         if curr_intent == "查询":
+            print('查询')
             
             retrievel_docs = self.retrievel(query, n_results=self.RETRIEVEL_NUMS)
 
