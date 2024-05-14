@@ -2,10 +2,11 @@ from utils.basic_utils import read_json
 
 intent_json = read_json('./utils/intent.json')
 def get_intent_info(intent_json, intent_name, info):
-    intent = ""
-    for id, intent in enumerate(intent_json.keys()):
-        intent += f'{str(id)}.{intent}：{intent_json[intent][intent_name][info]}\n'
-    return intent
+    intent_ret = ""
+    keys = [key for key in intent_json.keys()]
+    for id, intent in enumerate(keys):
+        intent_ret += f'{str(id)}.{intent}：{intent_json[intent][intent_name][info]}\n'
+    return intent_ret
 sui_intent_describe = get_intent_info(intent_json, "sui_intent", 'describe') 
 basic_intent_describe = get_intent_info(intent_json, "basic_intent", 'describe') 
 sui_intent_order = get_intent_info(intent_json, "sui_intent", "order")

@@ -47,7 +47,6 @@ class baichuan2LLM(LLM):
         ]
          # 重写调用函数
         response= self.model.chat(self.tokenizer, messages)
-        print("response_from_call:",response)
         return response
 
     @property
@@ -121,5 +120,4 @@ class Sui(LLM):
         ]
          # 重写调用函数
         response= self.model.chat(self.tokenizer, messages)
-        print("response_from_call:",response)
         return response

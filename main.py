@@ -59,7 +59,6 @@ class docRAG(InitInfo):
         try:
             curr_intent = self.intent_set[int(curr_intent)]
         except:
-            
             curr_intent = self.intent_set[0]
         
         self.prompt_info.intent = curr_intent
