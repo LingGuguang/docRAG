@@ -71,7 +71,7 @@ class QwenLLMChat(LLM):
                                                           device_map="cuda",
                                                           quantization_config=nf4_config)
         self.model.generation_config = GenerationConfig.from_pretrained(model_path)
-        self.model = self.model.eval()
+        # self.model = self.model.eval()
 
     def _call(self, prompt : str, stop: Optional[List[str]] = None,
                 run_manager: Optional[CallbackManagerForLLMRun] = None,
