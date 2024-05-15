@@ -47,13 +47,16 @@ class docRAG(InitInfo):
     llm = QwenLLMChat(model_path)
     memory = Sui_Memory
     
-    intentChain = intent_recognize_prompt() | llm
+    # intentChain = intent_recognize_prompt() | llm
 
     
     
 
     def run(self, query: str) -> str: 
-        curr_intent = self.intentChain.invoke(query)
+        intentChain = myChain(llm=self.llm,
+                            prompt=intent_recognize_prompt(),
+                            memory=self.memory)
+        curr_intent = intentChain.invoke(query)
         try:
             curr_intent = self.intent_set[int(curr_intent)]
         except:
