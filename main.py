@@ -24,7 +24,9 @@ class docRAG(InitInfo):
 
     current_path = os.path.dirname(sys.path[0])
     embedding_model_path = "models/bce-embedding-base_v1"
-    model_path = os.path.join(current_path, "LLModel/baichuan2-7B-chat")
+    # model_path = os.path.join(current_path, "LLModel/baichuan2-7B-chat")
+    model_name = "qwen1.5-14B-chat"
+    model_path = os.path.join(current_path, f"LLModel/{model_name}")
     rerank_model_path = os.path.join(current_path, "LLModel/bce-reranker-base_v1")
     chroma_path = "dataset/"
 
@@ -44,7 +46,12 @@ class docRAG(InitInfo):
     docs = read_text(docs_path, split_line=True)
     reranker = bceRerankFunction(rerank_model_path)
 
-    llm = QwenLLMChat(model_path)
+    if model_name == "baichuan2-7B-chat":
+        llm = baichuan2LLM(model_path)
+    elif model_name == "qwen1.5-14B-chat":
+        llm = QwenLLMChat(model_path)
+    else:
+        raise ValueError(f"wrong model named {model_name}")
     memory = Sui_Memory
     
     # intentChain = intent_recognize_prompt() | llm
