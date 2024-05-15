@@ -63,7 +63,8 @@ class docRAG(InitInfo):
     def run(self, query: str) -> str: 
         intentChain = myChain(llm=self.llm,
                             prompt=intent_recognize_prompt(),
-                            memory=self.memory)
+                            # memory=self.memory
+                            )
         curr_intent = intentChain.invoke(query, )
         curr_intent = basic_intent_clear(curr_intent, self.intent_set)
         print("意图：", curr_intent)
@@ -72,7 +73,6 @@ class docRAG(InitInfo):
 
         if curr_intent == "查询":
             print('查询')
-            
             retrievel_docs = self.retrievel(query, n_results=self.RETRIEVEL_NUMS)
 
             bm25 = BM25Model(self.docs)
@@ -109,7 +109,6 @@ class docRAG(InitInfo):
             response = chatChain.invoke(query, 
                                         is_output=False,
                                         stream=False,)
-
         print('memory:', self.memory)
         return response
     
@@ -140,14 +139,14 @@ class docRAG(InitInfo):
 
     # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
 
-    def hypothetical_answer_generation(self, query: str) -> str:
+    async def hypothetical_answer_generation(self, query: str) -> str:
         message = hypothetical_answer_template(query)
         ret = self.model.chat(self.tokenizer, message)
         return ret 
 
     # 你还可以生成多个表述不同的问题
 
-    def additional_query_generation(self, query: str, query_nums:int=1) -> str:
+    async def additional_query_generation(self, query: str, query_nums:int=1) -> str:
         message = additional_query_template(query, query_nums)
         ret = self.model.chat(self.tokenizer, message)
         return ret
