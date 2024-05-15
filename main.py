@@ -57,6 +57,7 @@ class docRAG(InitInfo):
                             prompt=intent_recognize_prompt(),
                             memory=self.memory)
         curr_intent = intentChain.invoke(query)
+        print("意图：", curr_intent)
         curr_intent = list(curr_intent)[0]
         try:
             curr_intent = self.intent_set[int(curr_intent)]
