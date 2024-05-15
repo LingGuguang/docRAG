@@ -65,10 +65,10 @@ class QwenLLMChat(LLM):
             load_in_8bit=True,
             # bnb_4bit_quant_type="nf4",
         )
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, use_fast=False)
         self.model = AutoModelForCausalLM.from_pretrained(model_path, 
                                                           trust_remote_code=True, 
-                                                          device_map="cuda",
+                                                          device_map="auto",
                                                           torch_dtype=torch.bfloat16)
         self.model.generation_config = GenerationConfig.from_pretrained(model_path)
         # self.model = self.model.eval()
