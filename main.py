@@ -4,7 +4,7 @@ import torch
 from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import chromadb 
 import os, sys
-from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM
+from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM, QwenLLMChat
 
 from argparser import main_argparser
 from text_search import BM25Model
@@ -44,7 +44,7 @@ class docRAG(InitInfo):
     docs = read_text(docs_path, split_line=True)
     reranker = bceRerankFunction(rerank_model_path)
 
-    llm = baichuan2LLM(model_path)
+    llm = QwenLLMChat(model_path)
     memory = Sui_Memory
     
     intentChain = intent_recognize_prompt() | llm

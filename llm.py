@@ -1,6 +1,6 @@
 
 from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, BitsAndBytesConfig
 from typing import cast 
 import torch
 from typing import Any, List, Optional
@@ -53,6 +53,44 @@ class baichuan2LLM(LLM):
     @property
     def _llm_type(self) -> str:
         return "baichuan2_LLM"
+
+
+class QwenLLMChat(LLM):
+    tokenizer : AutoTokenizer = None
+    model : AutoModelForCausalLM = None
+    
+    def __init__(self, model_path: str):
+        super().__init__()
+        nf4_config = BitsAndBytesConfig(
+            load_in_8bit=True,
+            # bnb_4bit_quant_type="nf4",
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, 
+                                                          trust_remote_code=True, 
+                                                          device_map="cuda",
+                                                          quantization_config=nf4_config)
+        self.model.generation_config = GenerationConfig.from_pretrained(model_path)
+        self.model = self.model.eval()
+
+    def _call(self, prompt : str, stop: Optional[List[str]] = None,
+                run_manager: Optional[CallbackManagerForLLMRun] = None,
+                **kwargs: Any):
+
+        messages = [{"role": "user", "content": prompt}]
+        input_ids = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        model_inputs = self.tokenizer([input_ids], return_tensors="pt").to('cuda')
+        generated_ids = self.model.generate(model_inputs.input_ids, max_new_tokens=512)
+        generated_ids = [
+            output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+        response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        
+        return response
+    
+    @property
+    def _llm_type(self) -> str:
+        return "qwen1.5_LLM"
 
 class myChain:
     llm_chain = None
