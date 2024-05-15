@@ -2,7 +2,7 @@
 
 [TODO]
 意图识别: 
-项目初期仅用prompt+LLM识别意图，准确率不高。
+项目初期仅在prompt里用fewshot指导输出+LLM识别意图，准确率不高。
 随着项目时间变长，收集（query，intention）变多，可以创建query的VD，召回k个相似query，然后做一个LLM的few-shot，以加强意图识别准确度。
 当k个召回意图相同时，就可以省去LLM步骤，直接获得意图。但这一切基于有大量（query，意图）数据，且embedding要合适。
 当embedding不够满足要求时，要用sft来align query和intention。
