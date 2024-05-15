@@ -10,6 +10,7 @@ from argparser import main_argparser
 from text_search import BM25Model
 from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
 from utils.get_memory import Sui_Memory
+from utils.intent_clear import basic_intent_clear
 from init_info import InitInfo
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -64,12 +65,9 @@ class docRAG(InitInfo):
                             prompt=intent_recognize_prompt(),
                             memory=self.memory)
         curr_intent = intentChain.invoke(query)
+        curr_intent = basic_intent_clear(curr_intent)
         print("意图：", curr_intent)
-        curr_intent = list(curr_intent)[0]
-        try:
-            curr_intent = self.intent_set[int(curr_intent)]
-        except:
-            curr_intent = self.intent_set[0]
+        curr_intent = self.intent_set[curr_intent]
         
 
         if curr_intent == "查询":
@@ -115,6 +113,9 @@ class docRAG(InitInfo):
         print('memory:', self.memory)
         return response
     
+    
+
+
     # Retrievel
     def retrievel(self, query: str, n_results: int=3) -> List[str]:
         """

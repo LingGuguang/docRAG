@@ -69,9 +69,11 @@ class QwenLLMChat(LLM):
         self.model = AutoModelForCausalLM.from_pretrained(model_path, 
                                                           trust_remote_code=True, 
                                                           device_map="auto",
-                                                          torch_dtype=torch.bfloat16)
+                                                          torch_dtype=torch.bfloat16,
+                                                        #   quantization_config=nf4_config,
+                                                          )
         self.model.generation_config = GenerationConfig.from_pretrained(model_path)
-        # self.model = self.model.eval()
+        self.model = self.model.eval()
 
     def _call(self, prompt : str, stop: Optional[List[str]] = None,
                 run_manager: Optional[CallbackManagerForLLMRun] = None,
