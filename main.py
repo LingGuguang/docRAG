@@ -10,7 +10,7 @@ from argparser import main_argparser
 from text_search import BM25Model
 from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
 from utils.get_memory import Sui_Memory
-from utils.intent_clear import basic_intent_clear
+from utils.intent_clear import basic_intent_filter
 from init_info import InitInfo
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -66,7 +66,7 @@ class docRAG(InitInfo):
                             # memory=self.memory
                             )
         curr_intent = intentChain.invoke(query)
-        curr_intent = basic_intent_clear(curr_intent, self.intent_set)
+        curr_intent = basic_intent_filter(curr_intent, self.intent_set)
         print("意图：", curr_intent)
         curr_intent = self.intent_set[curr_intent]
         
