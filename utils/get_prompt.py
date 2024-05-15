@@ -13,7 +13,7 @@ from utils.prompt import SUI_SETTING, INTENT_PROMPT
 def intent_recognize_prompt():
     chat_prompt = ChatPromptTemplate.from_messages([
         SystemMessagePromptTemplate.from_template(INTENT_PROMPT),
-        MessagesPlaceholder(variable_name='history', optional=False),
+        # MessagesPlaceholder(variable_name='history', optional=False),
         HumanMessagePromptTemplate.from_template("{input}")
     ])
     return chat_prompt
