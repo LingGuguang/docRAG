@@ -5,13 +5,15 @@ from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import chromadb 
 import os, sys
 from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM, QwenLLMChat
-
+from langchain_core.documents import Document
 from argparser import main_argparser
 from text_search import BM25Model
 from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
 from utils.get_memory import Sui_Memory
-from utils.intent_clear import basic_intent_filter
+from utils.intent_clear import basic_intention_filter
 from init_info import InitInfo
+
+from langchain_chroma import Chroma
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -42,7 +44,7 @@ class docRAG(InitInfo):
     ### 可以用client设计pipeline
     print("get chromadb...") 
     chroma_client = chromadb.PersistentClient(chroma_path)
-    chroma_collection = chroma_client.get_or_create_collection(chromadb_name_for_save, embedding_function=bce_embedding_function) # 设定文件名(我用文件路径代替)、embedding函数
+    chroma_collection = Chroma(client=chroma_client, collection_name=chromadb_name_for_save, embedding_function=bce_embedding_function)
 
     docs = read_text(docs_path, split_line=True)
     reranker = bceRerankFunction(rerank_model_path)
@@ -55,28 +57,31 @@ class docRAG(InitInfo):
         raise ValueError(f"wrong model named {model_name}")
     memory = Sui_Memory
     
-    # intentChain = intent_recognize_prompt() | llm
-
-    
-    
-
     def run(self, query: str) -> str: 
+        # 入口
+        # intention recognition
         intentChain = myChain(llm=self.llm,
                             prompt=intent_recognize_prompt(),
                             # memory=self.memory
                             )
-        curr_intent = intentChain.invoke(query)
-        curr_intent = basic_intent_filter(curr_intent, self.intent_set)
+        # intention filter
+        curr_intent = basic_intention_filter(intentChain.invoke(query), self.intent_set)
         print("意图：", curr_intent)
+        # intention string
         curr_intent = self.intent_set[curr_intent]
-        
 
         if curr_intent == "查询":
+            # 准备好格式
+            retrievel_docs_with_score = {
+                "embedding": [],
+                "bm25": []
+            }
             print('查询')
-            retrievel_docs = self.retrievel(query, n_results=self.RETRIEVEL_NUMS)
-
+            retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
+                                                                                 n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
             bm25 = BM25Model(self.docs)
-            retrievel_docs += self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS)
+            bm25_docs, bm25_scores = self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS, score=True)
+            retrievel_docs_with_score['bm25'] = [(doc, score) for doc, score in zip(bm25_docs, bm25_scores)]
             
             # if self.parser.hypocritical_answer:
             #     hypothetical_answer = self.hypothetical_answer_generation(query)
@@ -87,7 +92,9 @@ class docRAG(InitInfo):
             #     retrievel_docs += self.retrievel(additional_query)
             #     # print(retrievel_docs)
 
-            text_docs = [[query, doc] for doc in list(set(retrievel_docs))]
+            self.prep_for_rerank(query, retrievel_docs_with_score)
+
+            text_docs = [[query, doc] for doc in list(set(retrievel_docs_with_score))]
             rerank_score = self.reranker.run(text_docs)
             
             rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
@@ -114,20 +121,9 @@ class docRAG(InitInfo):
     
     
 
-
-    # Retrievel
-    def retrievel(self, query: str, n_results: int=3) -> List[str]:
-        """
-            小科普：Collection里有query和get两个方法。
-                query： 可以通过str、embedding、image查找top-n个最相关。
-                get：   筛选查找。ids是你给每个文档片段准备的ids，你可以通过ids获取对应的文档片段。每个片段允许有一些元数据(类型、作者之类的)，你可以用它来筛选。
-        """
-        results = self.chroma_collection.query(query_texts=query, n_results=n_results, include=['documents', 'embeddings']) # 这里面塞query、embedding，都行，反正embedding_function已经给了
-        return results['documents'][0]
-
     ### BM25
-    def retrievel_BM25(self, query: str, model: BM25Model, n_results: int=3) -> List[str]:
-        ret = model.topk(query, k=n_results)
+    def retrievel_BM25(self, query: str, model: BM25Model, n_results: int=3, score: bool=True) -> List[str]:
+        ret = model.topk(query, k=n_results, score=score)
         return ret
     
     # def model_check(func):

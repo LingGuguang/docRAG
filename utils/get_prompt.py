@@ -1,7 +1,6 @@
 from langchain.output_parsers import ResponseSchema, StructuredOutputParser
 from langchain.prompts import (
     ChatPromptTemplate,
-    PromptTemplate,
     SystemMessagePromptTemplate,
     AIMessagePromptTemplate,
     HumanMessagePromptTemplate,

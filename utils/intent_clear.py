@@ -2,7 +2,7 @@
 from typing import List
 import re
 
-def basic_intent_filter(dirty_intent:str, intent_set: List[str]) -> int:
+def basic_intention_filter(dirty_intent:str, intent_set: List[str]) -> int:
     if len(dirty_intent) < 5:
         return 0
 
