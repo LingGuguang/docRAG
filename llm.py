@@ -69,7 +69,7 @@ class QwenLLMChat(LLM):
         self.model = AutoModelForCausalLM.from_pretrained(model_path, 
                                                           trust_remote_code=True, 
                                                           device_map="cuda",
-                                                          quantization_config=nf4_config)
+                                                          torch_dtype=torch.bfloat16)
         self.model.generation_config = GenerationConfig.from_pretrained(model_path)
         # self.model = self.model.eval()
 
