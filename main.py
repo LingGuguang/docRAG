@@ -13,6 +13,7 @@ from utils.intent_clear import basic_intention_filter
 from init_info import InitInfo
 
 from langchain_chroma import Chroma
+from refuze_recognize import RefuseRecognizePre, Threshold
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -43,8 +44,9 @@ class docRAG(InitInfo):
     ### 可以用client设计pipeline
     print("get chromadb...") 
     chroma_client = chromadb.PersistentClient(chroma_path)
-    persist_directory = chroma_path
-    chroma_collection = Chroma(persist_directory=persist_directory, collection_name=chromadb_name_for_save, embedding_function=bce_embedding_function)
+    chroma_collection = chroma_client.get_or_create_collection(name=chromadb_name_for_save, embedding_function=bce_embedding_function)
+    # persist_directory = chroma_path
+    # chroma_collection = Chroma(persist_directory=persist_directory, collection_name=chromadb_name_for_save, embedding_function=bce_embedding_function)
 
     docs = read_text(docs_path, split_line=True)
     reranker = bceRerankFunction(rerank_model_path)
@@ -56,8 +58,18 @@ class docRAG(InitInfo):
     else:
         raise ValueError(f"wrong model named {model_name}")
     memory = Sui_Memory
-    
+
+    threshold_path = 'init_info/threshold.json'
+    RR_pre: RefuseRecognizePre = None
+
+    def init(self):
+        thresholder = read_json(self.threshold_path)
+        thresholder = Threshold(thresholder)
+        self.RR_pre = RefuseRecognizePre(thresholder)
+
     def run(self, query: str) -> str: 
+        self.init()
+
         # 入口
         # intention recognition
         intentChain = myChain(llm=self.llm,
@@ -77,8 +89,10 @@ class docRAG(InitInfo):
                 "bm25": []
             }
             print('查询')
-            retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
-                                                                                 n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
+            temp_retrievel_docs_with_scores = self.chroma_collection.query(query=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
+            retrievel_docs_with_score['embedding'] = temp_retrievel_docs_with_scores
+            # retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
+            #                                                                      n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
             bm25 = BM25Model(self.docs)
             bm25_docs, bm25_scores = self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS, score=True)
             retrievel_docs_with_score['bm25'] = [(doc, score) for doc, score in zip(bm25_docs, bm25_scores)]
@@ -96,7 +110,7 @@ class docRAG(InitInfo):
             retrievel_docs_with_score = self._standard_retrievel_docs_with_score(retrievel_docs_with_score)
 
             # 检测是否拒识。
-            retrievel_docs_with_score = self._refuze_recognize_pre(retrievel_docs_with_score)
+            retrievel_docs_with_score = self.RR_pre.run(retrievel_docs_with_score)
 
             self._prep_for_rerank(query, retrievel_docs_with_score)
 
@@ -126,6 +140,9 @@ class docRAG(InitInfo):
         print('memory:', self.memory)
         return response
     
+    def _standard_retrievel_docs_with_score(self, retrievel_docs_with_score):
+        print(retrievel_docs_with_score)
+        assert(1==0)
     
 
     ### BM25

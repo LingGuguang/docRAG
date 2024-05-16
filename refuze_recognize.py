@@ -27,7 +27,6 @@ class RefuseRecognizePre:
         accept soft recognition and hard recognition.
     
     """
-
     def __init__(self, threshold: Threshold):
         self.threshold = threshold
         self._check_threshold()
@@ -46,7 +45,7 @@ class RefuseRecognizePre:
         """
             策略如下。
             只要某个召回文档组的某个文档过了soft threshold，则全部保存。
-            如果某个召回文档组的文档卡在hard和soft之间，则标记所有文档。若rerank后的标记文档被选中，则给出prompt软提示。
+            如果某个召回文档组的文档score卡在hard和soft之间，则标记所有文档。若rerank后的标记文档被选中，则给出prompt软提示。
             如果某个文档组的分数都不超过hard threshold，应该剔除该文档组。
         """
         refuse_tag = {}
@@ -60,7 +59,7 @@ class RefuseRecognizePre:
             tasks.append(task)
         await asyncio.gather(*task)
 
-        
+
         
 
     async def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]], threshold: Tuple[Optional[float], Optional[float]]) -> List[int]:
