@@ -9,8 +9,8 @@ from argparser import main_argparser
 from text_search import BM25Model
 from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
 from utils.get_memory import Sui_Memory
-from utils.intent_clear import basic_intention_filter
-from init_info import InitInfo
+from utils.intent_clear import intent_chain_after_filter, basic_query_intention_filter
+from init_info import InitInfo, INIT_CHAT_ID
 
 
 from refuze_recognize import RefuseRecognizePre, Threshold
@@ -60,24 +60,24 @@ class docRAG(InitInfo):
     memory = Sui_Memory
 
     threshold_path = 'init_info/threshold.json'
-    RR_pre: RefuseRecognizePre = None
+    thresholder = Threshold(read_json(threshold_path))
+    RR_pre = RefuseRecognizePre(thresholder)
 
-    def init(self):
-        thresholder = read_json(self.threshold_path)
-        thresholder = Threshold(thresholder)
-        self.RR_pre = RefuseRecognizePre(thresholder)
+
 
     def run(self, query: str) -> str: 
-        self.init()
-
         # 入口
         # intention recognition
-        intentChain = myChain(llm=self.llm,
-                            prompt=intent_recognize_prompt(),
-                            # memory=self.memory
-                            )
-        # intention filter
-        curr_intent = basic_intention_filter(intentChain.invoke(query), self.intent_set)
+        query_as_chat = basic_query_intention_filter(query)
+        if not query_as_chat:
+            intentChain = myChain(llm=self.llm,
+                                prompt=intent_recognize_prompt(),
+                                # memory=self.memory
+                                )
+            # intention filter
+            curr_intent = intent_chain_after_filter(intentChain.invoke(query), self.intent_set)
+        else:
+            curr_intent = INIT_CHAT_ID
         print("意图：", curr_intent)
         # intention string
         curr_intent = self.intent_set[curr_intent]
