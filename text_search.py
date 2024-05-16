@@ -1,25 +1,29 @@
 from rank_bm25 import BM25Okapi
 import jieba
-from typing import List
+from typing import List, Optional, Tuple
 import torch
 
 class BM25Model:
     def __init__(self, data_list:List[List[str]]):
         self.data_list = data_list
         # corpus : list of list of str
-        self.corpus = self.load_corpus()
+        self.corpus = self._load_corpus()
+        self.bm = BM25Okapi(self.corpus)
 
-    def topk(self, query, k=1, score: bool=False) -> List[str]:
+    def topk(self, query, k=1) -> Tuple[List[str], List[float]]:
+        """
+            return (List[docs], List[scores])
+        
+        """
         query = jieba.lcut(query)  # 分词
-        bm = BM25Okapi(self.corpus)
-        scores = bm.get_scores(query)
+        scores = self.bm.get_scores(query)
         topk_scores, topk_ids = torch.topk(torch.Tensor(scores), k=k)
-        if score:
-            return [self.data_list[id] for id in topk_ids], topk_scores
-        else:
-            return [self.data_list[id] for id in topk_ids]
+        
+        return ([self.data_list[id] for id in topk_ids], 
+                [score.item() for score in topk_scores])
 
-    def load_corpus(self) -> List[List[str]]:
+
+    def _load_corpus(self) -> List[List[str]]:
         corpus = [jieba.lcut(data) for data in self.data_list]
         return corpus
 

@@ -2,8 +2,9 @@
 from typing import Optional, List, Tuple, Union, Any, Dict
 import sys 
 import asyncio
+import numpy as np
 
-MIN_VALUE = -sys.maxsize-1
+
 
 class Threshold:
     def __init__(self, threshold: Dict[str, Tuple[Optional[float], Optional[float]]] = {}):
@@ -22,11 +23,17 @@ class Threshold:
         return self.threshold[key]
 
 
-class RefuseRecognizePre:
+class PreNegativeRejection:
     """
         accept soft recognition and hard recognition.
     
     """
+    MIN_VALUE = -sys.maxsize-1
+    ACCEPT_VS_ACCEPT_AND_SOFT = 0.5
+
+
+
+    
     def __init__(self, threshold: Threshold):
         self.threshold = threshold
         self._check_threshold()
@@ -41,42 +48,70 @@ class RefuseRecognizePre:
         if soft < hard:
             raise ValueError(f'Wrong threshold. You should keep soft > hard, but we got hard {hard} and soft {soft}.')
 
-    async def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]):
+    async def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
         """
             策略如下。
             只要某个召回文档组的某个文档过了soft threshold，则全部保存。
             如果某个召回文档组的文档score卡在hard和soft之间，则标记所有文档。若rerank后的标记文档被选中，则给出prompt软提示。
             如果某个文档组的分数都不超过hard threshold，应该剔除该文档组。
+
+            return:
+                Tuple[bool, bool]: 
+                    (False, Any):    reject answer the question.
+                    (True,  False):  soft rejection.
+                    (True,  True):   must answer the query.
         """
-        refuse_tag = {}
+        rejection_tag = {}
         tasks = []
         for key in docs_with_scores_set.keys():
             if key not in self.threshold.keys():
                 raise ValueError(f"key {key} didn't set threshold.")
             docs_with_scores = docs_with_scores_set[key]
             threshold = self.threshold[key]
-            task = asyncio.create_task(self._refuse_tag(refuse_tag, key, docs_with_scores, threshold))
+            task = asyncio.create_task(self._refuse_tag(rejection_tag, key, docs_with_scores, threshold))
             tasks.append(task)
         await asyncio.gather(*task)
 
+        count = 0
+        total_score = 0
+        for key in docs_with_scores_set.keys():
+            if rejection_tag[key] == 0:
+                docs_with_scores_set.pop(key)
+            else:
+                count += 1
+                total_score += rejection_tag[key]
+        if (total_score-count)/count < self.ACCEPT_VS_ACCEPT_AND_SOFT:
+            return 
+                
+            
 
+
+        return rejection_tag
         
-
     async def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]], threshold: Tuple[Optional[float], Optional[float]]) -> List[int]:
+        """
+            strategy set as described in self.run
+        """
+        
         hard, soft = threshold
         if not hard and not soft:
             return [2 for _ in len(docs_with_scores)]
         if not hard:
-            hard = MIN_VALUE
+            hard = self.MIN_VALUE
         if not soft:
             soft = hard 
         
-        tag = []
+        tag = [0, 0]
         for _, score in docs_with_scores:
             if score > soft:
-                tag.append(2)
+                refuse_tag[key] = 2
+                return 
             elif score < hard:
-                tag.append(0)
+                tag[0] += 1
             else:
-                tag.append(1)
-        refuse_tag[key] = tag
+                tag[1] += 1 
+        if tag[0] < tag[1]:
+            refuse_tag[key] = 1
+        else:
+            refuse_tag[key] = 0
+            

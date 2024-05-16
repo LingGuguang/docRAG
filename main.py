@@ -1,6 +1,7 @@
 # Load model directly
 from utils.basic_utils import * 
 import torch
+from torch import Tensor
 import chromadb 
 import os, sys
 from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM, QwenLLMChat
@@ -11,9 +12,10 @@ from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
 from utils.get_memory import Sui_Memory
 from utils.intent_clear import intent_chain_after_filter, basic_query_intention_filter
 from init_info import InitInfo, INIT_CHAT_ID
+from typing import Any, Tuple
 
 
-from refuze_recognize import RefuseRecognizePre, Threshold
+from refuze_recognize import PreNegativeRejection, Threshold
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -61,7 +63,10 @@ class docRAG(InitInfo):
 
     threshold_path = 'init_info/threshold.json'
     thresholder = Threshold(read_json(threshold_path))
-    RR_pre = RefuseRecognizePre(thresholder)
+    pre_negative_rejection = PreNegativeRejection(thresholder)
+
+
+    bm25 = BM25Model(docs)
 
 
 
@@ -88,13 +93,13 @@ class docRAG(InitInfo):
                 "embedding": [],
                 "bm25": []
             }
-            print('查询')
+
+            # retrievel_docs_with_score: {"recall":[(doc, score), ...], ...}
             temp_retrievel_docs_with_scores = self.chroma_collection.query(query_texts=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
-            retrievel_docs_with_score['embedding'] = temp_retrievel_docs_with_scores
+            retrievel_docs_with_score['embedding'] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'], temp_retrievel_docs_with_scores['distances'])]
             # retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
             #                                                                      n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
-            bm25 = BM25Model(self.docs)
-            bm25_docs, bm25_scores = self.retrievel_BM25(query, bm25, n_results=self.BM25_NUMS, score=True)
+            bm25_docs, bm25_scores = self.bm25.topk(query, n_results=self.BM25_NUMS, score=True)
             retrievel_docs_with_score['bm25'] = [(doc, score) for doc, score in zip(bm25_docs, bm25_scores)]
             
             # if self.parser.hypocritical_answer:
@@ -106,11 +111,10 @@ class docRAG(InitInfo):
             #     retrievel_docs += self.retrievel(additional_query)
             #     # print(retrievel_docs)
 
-            # 格式标准化
-            retrievel_docs_with_score = self._standard_retrievel_docs_with_score(retrievel_docs_with_score)
 
             # 检测是否拒识。
-            retrievel_docs_with_score = self.RR_pre.run(retrievel_docs_with_score)
+            rejection_strategy = self.pre_negative_rejection.run(retrievel_docs_with_score)
+            
 
             self._prep_for_rerank(query, retrievel_docs_with_score)
 
@@ -139,16 +143,6 @@ class docRAG(InitInfo):
 
         print('memory:', self.memory)
         return response
-    
-    def _standard_retrievel_docs_with_score(self, retrievel_docs_with_score):
-        print(retrievel_docs_with_score)
-        assert(1==0)
-    
-
-    ### BM25
-    def retrievel_BM25(self, query: str, model: BM25Model, n_results: int=3, score: bool=True) -> List[str]:
-        ret = model.topk(query, k=n_results, score=score)
-        return ret
     
     # def model_check(func):
     #     def wrapper(self, *args, **kwargs):
