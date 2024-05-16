@@ -61,13 +61,9 @@ class docRAG(InitInfo):
         raise ValueError(f"wrong model named {model_name}")
     memory = Sui_Memory
 
-    threshold_path = 'init_info/threshold.json'
-    thresholder = Threshold(read_json(threshold_path))
-    pre_negative_rejection = PreNegativeRejection(thresholder)
-
+    pre_negative_rejection = PreNegativeRejection(thresholder_path='init_info/threshold.json')
 
     bm25 = BM25Model(docs)
-
 
 
     def run(self, query: str) -> str: 
@@ -113,25 +109,28 @@ class docRAG(InitInfo):
 
 
             # 检测是否拒识。
-            rejection_strategy = self.pre_negative_rejection.run(retrievel_docs_with_score)
-            
-
-            self._prep_for_rerank(query, retrievel_docs_with_score)
-
-            text_docs = [[query, doc] for doc in list(set(retrievel_docs_with_score))]
-            rerank_score = self.reranker.run(text_docs)
-            
-            rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
-            rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
-            rerank_concat_docs = '\n'.join(rerank_topk_docs)
-
-            chatChain = myChain(llm=self.llm,
-                            prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs),
+            is_reject, is_accept = self.pre_negative_rejection.run(retrievel_docs_with_score)        
+            if is_reject:
+                chatChain = myChain(llm=self.llm,
+                            prompt=Sui_prompt_setting(is_reject=True),
                             memory=self.memory)
+                response = chatChain.invoke(query, 
+                                            is_output=False,
+                                            stream=False)
+            else:
+                text_docs = [[query, doc] for doc in list(set(retrievel_docs_with_score))]
+                rerank_score = self.reranker.run(text_docs)
+                
+                rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)
+                rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
+                rerank_concat_docs = '\n'.join(rerank_topk_docs)
 
-            response = chatChain.invoke(query, 
-                                        is_output=False,
-                                        stream=False,)
+                chatChain = myChain(llm=self.llm,
+                                prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs, is_accept=True),
+                                memory=self.memory)
+                response = chatChain.invoke(query, 
+                                            is_output=False,
+                                            stream=False,)
         else:
             chatChain = myChain(llm=self.llm,
                             prompt=Sui_prompt_setting(intent=curr_intent),

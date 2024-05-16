@@ -1,18 +1,8 @@
 import re, json
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
-from langchain.prompts import (
-    ChatPromptTemplate,
-    PromptTemplate,
-    SystemMessagePromptTemplate,
-    AIMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-    MessagesPlaceholder
-)
+
 import torch
-from typing import Any, List, Optional, Dict
-from langchain.callbacks.manager import CallbackManagerForLLMRun
-from langchain.llms.base import LLM
+from typing import List, Dict
 
 def read_text(path: str, split_line: bool=False):
     with open(path, 'r', encoding='utf-8') as f:

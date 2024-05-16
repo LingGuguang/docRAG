@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple, Union, Any, Dict
 import sys 
 import asyncio
 import numpy as np
-
+from utils.basic_utils import read_json
 
 
 class Threshold:
@@ -31,12 +31,19 @@ class PreNegativeRejection:
     MIN_VALUE = -sys.maxsize-1
     ACCEPT_VS_ACCEPT_AND_SOFT = 0.5
 
-
-
-    
-    def __init__(self, threshold: Threshold):
-        self.threshold = threshold
+    def __init__(self, 
+                 threshold: Threshold = None,
+                 threshold_path: str = None,
+                 summary_key: str = "summary"):
+        if threshold:
+            self.threshold = threshold
+        elif threshold_path:
+            self.threshold = Threshold(read_json(threshold_path))
+        else:
+            raise ValueError("You must afford threshold or threshold_path.")
         self._check_threshold()
+
+        self.summary_key = summary_key
 
     def _check_threshold(self):
         [self._check_hard_and_soft(self.threshold[key]) for key in self.threshold.keys()]
@@ -51,15 +58,21 @@ class PreNegativeRejection:
     async def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
         """
             策略如下。
-            只要某个召回文档组的某个文档过了soft threshold，则全部保存。
-            如果某个召回文档组的文档score卡在hard和soft之间，则标记所有文档。若rerank后的标记文档被选中，则给出prompt软提示。
-            如果某个文档组的分数都不超过hard threshold，应该剔除该文档组。
+            只要某个召回文档组的某个文档过了soft threshold，计2分。
+            如果某个召回文档组的文档score卡在hard和soft之间，计1分。
+            如果某个文档组的分数都不超过hard threshold，应该剔除该文档组，且计0分。
+
+            为每个文档组打0 1 2分后，计算平均分数，并依靠summary_key记录的threshold判断整体文档的拒答方式。
+            计分后，我们一定会删除0分文档组。
 
             return:
                 Tuple[bool, bool]: 
-                    (False, Any):    reject answer the question.
-                    (True,  False):  soft rejection.
-                    (True,  True):   must answer the query.
+                    (True, Any):      reject answer the question? True.(hard rejection)
+                    (False,  False):  must answer the query? False.(soft rejection)
+                    (False,  True):   must answer the query? True.(accept)
+
+                    0%->|  (True,Any)  |  (False,False)  |  (False,True)  | <-100%
+
         """
         rejection_tag = {}
         tasks = []
@@ -78,15 +91,16 @@ class PreNegativeRejection:
             if rejection_tag[key] == 0:
                 docs_with_scores_set.pop(key)
             else:
-                count += 1
                 total_score += rejection_tag[key]
-        if (total_score-count)/count < self.ACCEPT_VS_ACCEPT_AND_SOFT:
-            return 
-                
-            
-
-
-        return rejection_tag
+            count += 1
+        score = total_score / count
+        hard, soft = rejection_tag[self.summary_key]
+        if score < hard:
+            return True, True 
+        elif score > soft:
+            return False, True
+        else:
+            return False, False
         
     async def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]], threshold: Tuple[Optional[float], Optional[float]]) -> List[int]:
         """

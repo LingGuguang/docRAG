@@ -1,10 +1,14 @@
 {
     "embedding" : {
-        "soft": [],
-        "hard": []
+        "soft": [0.7],
+        "hard": [0.6]
     },
     "bm25" : {
-        "soft" : [],
-        "hard" : []
+        "soft" : [0.7],
+        "hard" : [0.6]
+    },
+    "summary" : {
+        "soft" : [1.2],
+        "hard" : [0.7]
     }
 }
