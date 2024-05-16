@@ -54,8 +54,12 @@ class PreNegativeRejection:
             return 
         if soft < hard:
             raise ValueError(f'Wrong threshold. You should keep soft > hard, but we got hard {hard} and soft {soft}.')
+        
 
-    async def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
+    def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
+        return asyncio.run(self._run(docs_with_scores_set))
+
+    async def _run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
         """
             策略如下。
             只要某个召回文档组的某个文档过了soft threshold，计2分。
