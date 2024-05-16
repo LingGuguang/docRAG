@@ -12,7 +12,7 @@ from utils.get_memory import Sui_Memory
 from utils.intent_clear import basic_intention_filter
 from init_info import InitInfo
 
-from langchain_chroma import Chroma
+
 from refuze_recognize import RefuseRecognizePre, Threshold
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
