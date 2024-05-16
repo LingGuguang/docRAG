@@ -113,7 +113,7 @@ class docRAG(InitInfo):
             is_reject, is_accept = self.pre_negative_rejection.run(retrievel_docs_with_score)        
             if is_reject:
                 chatChain = myChain(llm=self.llm,
-                            prompt=Sui_prompt_setting(is_reject=True),
+                            prompt=Sui_prompt_setting(status="chat"),
                             memory=self.memory)
                 response = chatChain.invoke(query, 
                                             is_output=False,
@@ -126,17 +126,17 @@ class docRAG(InitInfo):
                 rerank_topk_docs = [doc for doc, score in rerank_docs[:self.RERANK_TOP_K]]
                 rerank_concat_docs = '\n'.join(rerank_topk_docs)
 
+                status = 'accept' if is_accept else 'soft_reject'
                 chatChain = myChain(llm=self.llm,
-                                prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs, is_accept=True),
+                                prompt=Sui_prompt_setting(intent=curr_intent, rag_text=rerank_concat_docs, status=status),
                                 memory=self.memory)
                 response = chatChain.invoke(query, 
                                             is_output=False,
                                             stream=False,)
         else:
             chatChain = myChain(llm=self.llm,
-                            prompt=Sui_prompt_setting(intent=curr_intent),
+                            prompt=Sui_prompt_setting(status="chat"),
                             memory=self.memory)
-
             response = chatChain.invoke(query, 
                                         is_output=False,
                                         stream=False,)

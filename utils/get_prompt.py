@@ -17,15 +17,19 @@ def intent_recognize_prompt():
     ])
     return chat_prompt
 
-def Sui_prompt_setting(intent: str, rag_text: str="", is_reject: bool=None, is_accept: bool=None):
-    if is_reject:
+def Sui_prompt_setting(status: str, intent: str=None, rag_text: str=None):
+    status_set = ['chat', 'soft_reject', 'accept']
+    if status not in status_set:
+        raise ValueError(f'Wrong status. We got {status}, but we only accept {status_set}')
+
+    if status == "chat":
         chat_prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(SUI_CHAT_PROMPT),
             MessagesPlaceholder(variable_name='history', optional=False),
             HumanMessagePromptTemplate.from_template("{input}")
         ])
         chat_prompt = chat_prompt.partial(intent=intent, rag_text=rag_text)
-    elif is_accept:
+    elif status == "accept":
         chat_prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(SUI_INTENTION_PROMPT),
             MessagesPlaceholder(variable_name='history', optional=False),
