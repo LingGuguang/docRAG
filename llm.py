@@ -10,7 +10,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig, 
 from utils.get_prompt import Sui_prompt_setting, intent_recognize_prompt
 
 from langchain.chains.conversation.base import LLMChain
-import re
+import re 
 
 
 
@@ -111,17 +111,8 @@ class myChain:
             # input_key="input", # 设置conversation的新输入的占位符
         )
 
-    def _basic_intent_filter(self, dirty_intent:str, intent_set: List[str]) -> int:
-        if len(dirty_intent) < 5:
-            return 0
 
-        for id, intent in enumerate(intent_set):
-            if re.findall(str(id), dirty_intent) or re.findall(intent, dirty_intent):
-                return id
-        
-        return 0
 
-    @_basic_intent_filter
     def invoke(self, query: str, is_output: bool=False, stream: bool=False):
         if stream:
             position = 0
