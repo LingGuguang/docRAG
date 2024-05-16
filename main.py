@@ -61,7 +61,8 @@ class docRAG(InitInfo):
         raise ValueError(f"wrong model named {model_name}")
     memory = Sui_Memory
 
-    pre_negative_rejection = PreNegativeRejection(thresholder_path='init_info/threshold.json')
+    threshold_path = 'init_info/threshold.json'
+    pre_negative_rejection = PreNegativeRejection(threshold_path=threshold_path)
 
     bm25 = BM25Model(docs)
 
