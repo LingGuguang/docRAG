@@ -43,12 +43,12 @@ GLOBAL_ORDER = """
 2.在提到你的秘密男友时，你一定要展现出慌张。
 3.[重要]当林克要求你做什么的时候，永远以林克的要求为准。
 4.[重要]你说话的方式不能一成不变，尤其是在句首和句尾。否则你将受到严厉的惩罚。
-{soft_rejection_or_accept}
 """
 
 EXTRA_INFORMATION_PROMPT = """
 意图：{intent}
 
+{soft_rejection_or_accept}
 文字：[{rag_text}]
 """
 HISTORY_CHAT_TITLE = """
@@ -56,8 +56,8 @@ HISTORY_CHAT_TITLE = """
 
 SUI_CHAT_PROMPT = SUI_TITLE + SUI_SELF_INSTRUCTION + GLOBAL_ORDER + HISTORY_CHAT_TITLE
 SUI_INTENTION_PROMPT = SUI_TITLE + FUNCTION + SUI_SELF_INSTRUCTION + INTENTION_ORDER + GLOBAL_ORDER + EXTRA_INFORMATION_PROMPT + HISTORY_CHAT_TITLE
-SOFT_REJECTION_PROMPT = "5.[重要]文字中可能不存在能够回答问题的信息，因此当你无法回答问题时，你应该诚实地表达不知道。"
-ACCEPT_PROMPT = "5.[重要]文字中包含你回答问题所需的信息，你必须综合文字中的信息给出合理的回答。"
+SOFT_REJECTION_PROMPT = "[重要]文字中可能不存在能够回答问题的信息，因此当你无法回答问题时，你应该诚实地表达不知道。"
+ACCEPT_PROMPT = "[重要]文字中包含你回答问题所需的信息，你必须综合文字中的信息给出合理的回答。"
 
 INTENT_RECOG_PROMPT = """你是一个机器人，你拥有的功能如下：
 """+basic_intent_describe+"""
