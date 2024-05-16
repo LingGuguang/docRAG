@@ -96,7 +96,7 @@ class docRAG(InitInfo):
             retrievel_docs_with_score['embedding'] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'], temp_retrievel_docs_with_scores['distances'])]
             # retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
             #                                                                      n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
-            bm25_docs, bm25_scores = self.bm25.topk(query, n_results=self.BM25_NUMS, score=True)
+            bm25_docs, bm25_scores = self.bm25.topk(query, k=self.BM25_NUMS)
             retrievel_docs_with_score['bm25'] = [(doc, score) for doc, score in zip(bm25_docs, bm25_scores)]
             
             # if self.parser.hypocritical_answer:
