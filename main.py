@@ -1,7 +1,6 @@
 # Load model directly
 from utils.basic_utils import * 
 import torch
-from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import chromadb 
 import os, sys
 from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM, QwenLLMChat
@@ -44,7 +43,8 @@ class docRAG(InitInfo):
     ### 可以用client设计pipeline
     print("get chromadb...") 
     chroma_client = chromadb.PersistentClient(chroma_path)
-    chroma_collection = Chroma(client=chroma_client, collection_name=chromadb_name_for_save, embedding_function=bce_embedding_function)
+    persist_directory = chroma_path
+    chroma_collection = Chroma(persist_directory=persist_directory, collection_name=chromadb_name_for_save, embedding_function=bce_embedding_function)
 
     docs = read_text(docs_path, split_line=True)
     reranker = bceRerankFunction(rerank_model_path)
@@ -92,7 +92,13 @@ class docRAG(InitInfo):
             #     retrievel_docs += self.retrievel(additional_query)
             #     # print(retrievel_docs)
 
-            self.prep_for_rerank(query, retrievel_docs_with_score)
+            # 格式标准化
+            retrievel_docs_with_score = self._standard_retrievel_docs_with_score(retrievel_docs_with_score)
+
+            # 检测是否拒识。
+            retrievel_docs_with_score = self._refuze_recognize_pre(retrievel_docs_with_score)
+
+            self._prep_for_rerank(query, retrievel_docs_with_score)
 
             text_docs = [[query, doc] for doc in list(set(retrievel_docs_with_score))]
             rerank_score = self.reranker.run(text_docs)
@@ -116,6 +122,7 @@ class docRAG(InitInfo):
             response = chatChain.invoke(query, 
                                         is_output=False,
                                         stream=False,)
+
         print('memory:', self.memory)
         return response
     

@@ -26,5 +26,9 @@ B.embedding召回，用相似度。
 然后对reranker微调。
 实际上embedding align和reranker是一回事，只不过embedding注重速度，所以是双塔模型。而reranker是cross-encoder，所以性能更好。对他俩的训练本质都是对齐。因此数据和loss都一样。
 
+诚实样本：
+最后的generation LLM面对不可靠的上下文可能给出幻觉回答。此时可以通过SFT时加入诚实样本：即上下文与query无关，output诚实地说我不知道的数据样例，以达到拒答目的。
+
+
 召回策略：
 
