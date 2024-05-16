@@ -89,7 +89,7 @@ class docRAG(InitInfo):
                 "bm25": []
             }
             print('查询')
-            temp_retrievel_docs_with_scores = self.chroma_collection.query(query=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
+            temp_retrievel_docs_with_scores = self.chroma_collection.query(query_texts=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
             retrievel_docs_with_score['embedding'] = temp_retrievel_docs_with_scores
             # retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
             #                                                                      n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
