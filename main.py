@@ -91,7 +91,7 @@ class docRAG(InitInfo):
 
             # retrievel_docs_with_score: {"recall":[(doc, score), ...], ...}
             temp_retrievel_docs_with_scores = self.chroma_collection.query(query_texts=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
-            retrievel_docs_with_score['embedding'] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'], temp_retrievel_docs_with_scores['distances'])]
+            retrievel_docs_with_score['embedding'] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'][0], temp_retrievel_docs_with_scores['distances'][0])]
             # retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
             #                                                                      n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
             bm25_docs, bm25_scores = self.bm25.topk(query, k=self.BM25_NUMS)
@@ -100,7 +100,7 @@ class docRAG(InitInfo):
             if self.parser.enhance_answer:
                 hypothetical_answer = self.enhance_answer_generation(query)
                 temp_retrievel_docs_with_scores["enhance_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.ENHANCE_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
-                retrievel_docs_with_score["enhance_answer"] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'], temp_retrievel_docs_with_scores['distances'])]
+                retrievel_docs_with_score["enhance_answer"] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'][0], temp_retrievel_docs_with_scores['distances'][0])]
                 # print(retrievel_docs)
             if int(self.parser.additional_query) > 0:
                 additional_query = self.enhance_query_generation(query, int(self.parser.additional_query))
