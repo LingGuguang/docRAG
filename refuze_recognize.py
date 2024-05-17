@@ -115,8 +115,7 @@ class PreNegativeRejection:
                 rejection_tag[key] = self._refuse_tag()
                 # raise ValueError(f"key {key} didn't set threshold.")
             scores = [score for _, score in docs_with_scores_set[key]]
-            threshold = self.threshold.get_threshold_from_key(key) # return tuple[hard, soft], include None or float
-            rejection_tag[key] = self._refuse_tag(scores, threshold)
+            rejection_tag[key] = self._refuse_tag(scores, self.threshold.get_threshold_from_key(key))
         count = 0
         total_score = 0
         for key in docs_with_scores_set.keys():
@@ -126,7 +125,7 @@ class PreNegativeRejection:
                 total_score += rejection_tag[key]
             count += 1
         score = total_score / count
-        status = self._refuse_tag([score,], rejection_tag[self.summary_key])
+        status = self._refuse_tag([score,], self.threshold.get_threshold_from_key(self.summary_key))
         if status == self.REJECT:
             return self.REJECT_RETURN
         elif status == self.ACCEPT:
