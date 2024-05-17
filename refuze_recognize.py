@@ -90,7 +90,7 @@ class PreNegativeRejection:
 
     
 
-    def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool, Dict]:
+    def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[Tuple[bool, bool], Dict]:
         """
             策略如下。
             只要某个召回文档组的某个文档过了soft threshold，计2分。
