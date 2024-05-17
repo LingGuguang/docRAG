@@ -90,8 +90,8 @@ class docRAG(InitInfo):
             }
 
             # retrievel_docs_with_score: {"recall":[(doc, score), ...], ...}
-            temp_retrievel_docs_with_scores = self.chroma_collection.query(query_texts=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
-            print("++++++++++", temp_retrievel_docs_with_scores['documents'])
+            temp_retrievel_docs_with_scores = self.chroma_collection.qurag_textery(query_texts=query, n_results=self.RETRIEVEL_NUMS, include=['documents', 'distances'])
+            # print("++++++++++", temp_retrievel_docs_with_scores['documents'])
             retrievel_docs_with_score['embedding'] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'][0], temp_retrievel_docs_with_scores['distances'][0])]
             # retrievel_docs_with_score['embedding'] = self.chroma_collection.similarity_search_with_score(query_texts=query, 
             #                                                                      n_results=self.RETRIEVEL_NUMS) # 这里面塞query、embedding，都行，反正embedding_function已经给了
@@ -108,11 +108,11 @@ class docRAG(InitInfo):
                 # retrievel_docs_with_score["additional_query"] = self.chroma_collection.query(additional_query)
                 # print(retrievel_docs)
 
-            for key in retrievel_docs_with_score.keys():
-                print("retrievel:", retrievel_docs_with_score[key])
-                print('________________')
+            # for key in retrievel_docs_with_score.keys():
+            #     print("retrievel:", retrievel_docs_with_score[key])
+            #     print('________________')
             # 检测是否拒识。
-            is_reject, is_accept = self.pre_negative_rejection.run(retrievel_docs_with_score)        
+            is_reject, is_accept, retrievel_docs_with_score = self.pre_negative_rejection.run(retrievel_docs_with_score)        
             if is_reject:
                 chatChain = myChain(llm=self.llm,
                             prompt=Sui_prompt_setting(status="chat"),
@@ -121,7 +121,9 @@ class docRAG(InitInfo):
                                             is_output=False,
                                             stream=False)
             else:
-                text_docs = [[query, doc] for doc in list(set(retrievel_docs_with_score))]
+                text_docs = []
+                for key in retrievel_docs_with_score.keys():
+                    text_docs.extend([[query, doc] for doc, _ in retrievel_docs_with_score[key]])
                 rerank_score = self.reranker.run(text_docs)
                 
                 rerank_docs = sorted([(query_and_doc[1], score) for query_and_doc, score in zip(text_docs, rerank_score)], key=lambda x: x[1], reverse=True)

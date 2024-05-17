@@ -90,7 +90,7 @@ class PreNegativeRejection:
 
     
 
-    def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
+    def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool, Dict]:
         """
             策略如下。
             只要某个召回文档组的某个文档过了soft threshold，计2分。
@@ -127,11 +127,11 @@ class PreNegativeRejection:
         score = total_score / count
         status = self._refuse_tag([score,], self.threshold.get_threshold_from_key(self.summary_key))
         if status == self.REJECT:
-            return self.REJECT_RETURN
+            return self.REJECT_RETURN, docs_with_scores_set
         elif status == self.ACCEPT:
-            return self.ACCEPT_RETURN
+            return self.ACCEPT_RETURN, docs_with_scores_set
         else:
-            return self.SOFT_REJECT_RETURN
+            return self.SOFT_REJECT_RETURN, docs_with_scores_set
         
     def _refuse_tag(self, scores: List[float]=None, threshold: Tuple[Optional[float], Optional[float]]=None):
         """
