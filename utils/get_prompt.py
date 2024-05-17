@@ -8,7 +8,7 @@ from langchain.prompts import (
 
 )
 from utils.prompt import (SUI_CHAT_PROMPT, SUI_INTENTION_PROMPT, INTENT_RECOG_PROMPT, SOFT_REJECTION_PROMPT, ACCEPT_PROMPT,
-                          ENHANCE_ANSWER, ENHANCE_QUERY)
+                          AUG_ANSWER, AUG_QUERY)
 
 def intent_recognize_prompt():
     chat_prompt = ChatPromptTemplate.from_messages([
@@ -47,17 +47,17 @@ def Sui_prompt_setting(status: str, intent: str=None, rag_text: str=None):
 
     return chat_prompt
 
-def enhance_answer_prompt(query: str):
+def aug_answer_prompt(query: str):
     chat_prompt = ChatPromptTemplate.from_messages([
-            SystemMessagePromptTemplate.from_template(ENHANCE_ANSWER),
+            SystemMessagePromptTemplate.from_template(AUG_ANSWER),
             # MessagesPlaceholder(variable_name='history', optional=False),
             HumanMessagePromptTemplate.from_template("{input}")
         ])
     return chat_prompt
 
-def enhance_query_prompt(query: str, nums: int=1):
+def aug_query_prompt(query: str, nums: int=1):
     chat_prompt = ChatPromptTemplate.from_messages([
-            SystemMessagePromptTemplate.from_template(ENHANCE_QUERY),
+            SystemMessagePromptTemplate.from_template(AUG_QUERY),
             # MessagesPlaceholder(variable_name='history', optional=False),
             HumanMessagePromptTemplate.from_template("{input}")
         ])
