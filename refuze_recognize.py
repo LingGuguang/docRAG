@@ -51,6 +51,14 @@ class PreNegativeRejection:
     MIN_VALUE = -sys.maxsize-1
     ACCEPT_VS_ACCEPT_AND_SOFT = 0.5
 
+    REJECT = 0
+    SOFT_REJECT = 1
+    ACCEPT = 2
+
+    REJECT_RETURN = (True, True)
+    SOFT_REJECT_RETURN = (False, False)
+    ACCEPT_RETURN = (False, True)
+
     def __init__(self, 
                  threshold: Threshold = None,
                  threshold_path: str = None,
@@ -89,11 +97,11 @@ class PreNegativeRejection:
         rejection_tag = {}
         for key in docs_with_scores_set.keys():
             if key not in self.threshold.keys():
-                self._refuse_tag(rejection_tag, key)
+                rejection_tag[key] = self._refuse_tag()
                 # raise ValueError(f"key {key} didn't set threshold.")
-            docs_with_scores = docs_with_scores_set[key]
+            scores = [score for _, score in docs_with_scores_set[key]]
             threshold = self.threshold[key]
-            self._refuse_tag(rejection_tag, key, docs_with_scores, threshold)
+            rejection_tag[key] = self._refuse_tag(scores, threshold)
         count = 0
         total_score = 0
         for key in docs_with_scores_set.keys():
@@ -103,41 +111,39 @@ class PreNegativeRejection:
                 total_score += rejection_tag[key]
             count += 1
         score = total_score / count
-        hard, soft = rejection_tag[self.summary_key]
-        if score < hard:
-            return True, True 
-        elif score > soft:
-            return False, True
+        status = self._refuse_tag([score,], rejection_tag[self.summary_key])
+        if status == self.REJECT:
+            return self.REJECT_RETURN
+        elif status == self.ACCEPT:
+            return self.ACCEPT_RETURN
         else:
-            return False, False
+            return self.SOFT_REJECT_RETURN
         
-    def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]]=None, threshold: Tuple[Optional[float], Optional[float]]=None):
+    def _refuse_tag(self, scores: List[float]=None, threshold: Tuple[Optional[float], Optional[float]]=None):
         """
             strategy set as described in self.run
         """
         if not threshold:
-            refuse_tag[key] = 2
-            return
+            return self.ACCEPT
         
         hard, soft = threshold
         if not hard and not soft:
-            return [2 for _ in len(docs_with_scores)]
+            return self.ACCEPT
         if not hard:
             hard = self.MIN_VALUE
         if not soft:
             soft = hard 
         
         tag = [0, 0]
-        for _, score in docs_with_scores:
+        for score in scores:
             if score > soft:
-                refuse_tag[key] = 2
-                return 
+                return self.ACCEPT
             elif score < hard:
                 tag[0] += 1
             else:
                 tag[1] += 1 
         if tag[0] < tag[1]:
-            refuse_tag[key] = 1
+            return self.SOFT_REJECT
         else:
-            refuse_tag[key] = 0
+            return self.REJECT
             
