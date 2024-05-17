@@ -8,13 +8,11 @@ from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM, 
 from langchain_core.documents import Document
 from argparser import main_argparser
 from text_search import BM25Model
-from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting
+from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting, enhance_answer_prompt, enhance_query_prompt
 from utils.get_memory import Sui_Memory
 from utils.intent_clear import intent_chain_after_filter, basic_query_intention_filter
 from init_info import InitInfo, INIT_CHAT_ID
 from typing import Any, Tuple
-
-
 from refuze_recognize import PreNegativeRejection, Threshold
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -99,15 +97,14 @@ class docRAG(InitInfo):
             bm25_docs, bm25_scores = self.bm25.topk(query, k=self.BM25_NUMS)
             retrievel_docs_with_score['bm25'] = [(doc, score) for doc, score in zip(bm25_docs, bm25_scores)]
             
-            # if self.parser.hypocritical_answer:
-            #     hypothetical_answer = self.hypothetical_answer_generation(query)
-            #     retrievel_docs += self.retrievel(f'{query} {hypothetical_answer}')
-            #     # print(retrievel_docs)
-            # if int(self.parser.additional_query):
-            #     additional_query = self.additional_query_generation(query, int(self.parser.additional_query))
-            #     retrievel_docs += self.retrievel(additional_query)
-            #     # print(retrievel_docs)
-
+            if self.parser.enhance_answer:
+                hypothetical_answer = self.enhance_answer_generation(query)
+                retrievel_docs_with_score["enhance_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.ENHANCE_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
+                # print(retrievel_docs)
+            if int(self.parser.additional_query) > 0:
+                additional_query = self.enhance_query_generation(query, int(self.parser.additional_query))
+                # retrievel_docs_with_score["additional_query"] = self.chroma_collection.query(additional_query)
+                # print(retrievel_docs)
 
             # 检测是否拒识。
             is_reject, is_accept = self.pre_negative_rejection.run(retrievel_docs_with_score)        
@@ -153,17 +150,28 @@ class docRAG(InitInfo):
 
     # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
 
-    async def hypothetical_answer_generation(self, query: str) -> str:
-        message = hypothetical_answer_template(query)
-        ret = self.model.chat(self.tokenizer, message)
-        return ret 
+    def enhance_answer_generation(self, query: str) -> str:
+        chatChain = myChain(llm=self.llm,
+                            prompt=enhance_answer_prompt()
+                            )
+        response = chatChain.invoke(query, 
+                                    is_output=False,
+                                    stream=False,)
+        return response 
 
     # 你还可以生成多个表述不同的问题
 
-    async def additional_query_generation(self, query: str, query_nums:int=1) -> str:
-        message = additional_query_template(query, query_nums)
-        ret = self.model.chat(self.tokenizer, message)
-        return ret
+    def enhance_query_generation(self, query: str, query_nums:int=1) -> str:
+        prompt, output_parser = enhance_query_prompt(query_nums)
+        chatChain = myChain(llm=self.llm,
+                            prompt=prompt,
+                            output_parser=output_parser
+                            )
+        response = chatChain.invoke(query, 
+                                    is_output=False,
+                                    stream=False,)
+        print("enhance_query:",response)
+        return response
     
 
 

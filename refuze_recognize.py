@@ -89,7 +89,8 @@ class PreNegativeRejection:
         rejection_tag = {}
         for key in docs_with_scores_set.keys():
             if key not in self.threshold.keys():
-                raise ValueError(f"key {key} didn't set threshold.")
+                self._refuse_tag(rejection_tag, key)
+                # raise ValueError(f"key {key} didn't set threshold.")
             docs_with_scores = docs_with_scores_set[key]
             threshold = self.threshold[key]
             self._refuse_tag(rejection_tag, key, docs_with_scores, threshold)
@@ -110,10 +111,13 @@ class PreNegativeRejection:
         else:
             return False, False
         
-    def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]], threshold: Tuple[Optional[float], Optional[float]]) -> List[int]:
+    def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]]=None, threshold: Tuple[Optional[float], Optional[float]]=None):
         """
             strategy set as described in self.run
         """
+        if not threshold:
+            refuse_tag[key] = 2
+            return
         
         hard, soft = threshold
         if not hard and not soft:

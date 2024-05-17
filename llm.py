@@ -100,13 +100,14 @@ class QwenLLMChat(LLM):
 class myChain:
     llm_chain = None
 
-    def __init__(self, llm, prompt, memory=None):
+    def __init__(self, llm, prompt, memory=None, output_parser=None):
         self.llm_chain = LLMChain(
             llm=llm, 
             prompt=prompt,
             memory=memory,
             return_final_only=True,
             verbose=True,
+            output_parser=output_parser,
             output_key="output",# 设置输出内容的占位符，这使得该输出可以直接被后续链中的template直接使用。
             # input_key="input", # 设置conversation的新输入的占位符
         )
