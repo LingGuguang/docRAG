@@ -99,13 +99,17 @@ class docRAG(InitInfo):
             
             if self.parser.enhance_answer:
                 hypothetical_answer = self.enhance_answer_generation(query)
-                retrievel_docs_with_score["enhance_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.ENHANCE_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
+                temp_retrievel_docs_with_scores["enhance_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.ENHANCE_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
+                retrievel_docs_with_score["enhance_answer"] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'], temp_retrievel_docs_with_scores['distances'])]
                 # print(retrievel_docs)
             if int(self.parser.additional_query) > 0:
                 additional_query = self.enhance_query_generation(query, int(self.parser.additional_query))
                 # retrievel_docs_with_score["additional_query"] = self.chroma_collection.query(additional_query)
                 # print(retrievel_docs)
 
+            for key in retrievel_docs_with_score.keys():
+                print("retrievel:", retrievel_docs_with_score[key])
+                print('________________')
             # 检测是否拒识。
             is_reject, is_accept = self.pre_negative_rejection.run(retrievel_docs_with_score)        
             if is_reject:
