@@ -31,6 +31,21 @@ class Threshold:
     def __getitem__(self, key):
         return self.threshold[key]
     
+    def get_threshold_from_key(self, key: str):
+        if key in self.threshold.keys():
+            hard, soft = self.threshold[key]['hard'], self.threshold[key]['soft']
+            if hard == []:
+                hard = None 
+            else:
+                hard = hard[0]
+            if soft == []:
+                soft == None
+            else:
+                soft = soft[0]
+        else:
+            hard, soft = None, None
+        return (hard, soft)
+    
     def check_threshold(self):
         [self._check_hard_and_soft(self.threshold[key]) for key in self.threshold.keys()]
 
@@ -100,7 +115,7 @@ class PreNegativeRejection:
                 rejection_tag[key] = self._refuse_tag()
                 # raise ValueError(f"key {key} didn't set threshold.")
             scores = [score for _, score in docs_with_scores_set[key]]
-            threshold = self.threshold[key]
+            threshold = self.threshold.get_threshold_from_key(key) # return tuple[hard, soft], include None or float
             rejection_tag[key] = self._refuse_tag(scores, threshold)
         count = 0
         total_score = 0
@@ -123,9 +138,6 @@ class PreNegativeRejection:
         """
             strategy set as described in self.run
         """
-        if not threshold:
-            return self.ACCEPT
-        
         hard, soft = threshold
         if not hard and not soft:
             return self.ACCEPT
@@ -136,6 +148,7 @@ class PreNegativeRejection:
         
         tag = [0, 0]
         for score in scores:
+            print(score, scores, soft)
             if score > soft:
                 return self.ACCEPT
             elif score < hard:
