@@ -14,13 +14,33 @@ class Threshold:
         return [key for key in self.threshold.keys()]
 
     def add(self, key: str, hard_threshold: Optional[float]=None, soft_threshold: Optional[float]=None):
-        self.threshold[key] = (hard_threshold, soft_threshold)
+        temp = {
+            "hard" : [],
+            "soft" : []
+        }
+        if hard_threshold:
+            temp["hard"] = [hard_threshold]
+        if soft_threshold:
+            temp['soft'] = [soft_threshold]
+        self._check_hard_and_soft(temp)
+        self.threshold[key] = temp
 
     def get_keys(self):
         return self.threshold.keys()
     
     def __getitem__(self, key):
         return self.threshold[key]
+    
+    def check_threshold(self):
+        [self._check_hard_and_soft(self.threshold[key]) for key in self.threshold.keys()]
+
+    def _check_hard_and_soft(self, hard_and_soft: Dict[str, List[float]]):
+        hard, soft = hard_and_soft['hard'], hard_and_soft['soft']
+        if hard == [] or soft == []:
+            return 
+        if soft[0] < hard[0]:
+            raise ValueError(f'Wrong threshold. You should keep soft > hard, but we got hard {hard[0]} and soft {soft[0]}.')
+        
 
 
 class PreNegativeRejection:
@@ -41,20 +61,11 @@ class PreNegativeRejection:
             self.threshold = Threshold(read_json(threshold_path))
         else:
             raise ValueError("You must afford threshold or threshold_path.")
-        self._check_threshold()
+        self.threshold.check_threshold()
 
         self.summary_key = summary_key
 
-    def _check_threshold(self):
-        [self._check_hard_and_soft(self.threshold[key]) for key in self.threshold.keys()]
-
-    def _check_hard_and_soft(self, hard_and_soft: Tuple[Any, Any]):
-        hard, soft = hard_and_soft
-        if hard == None or soft == None:
-            return 
-        if soft < hard:
-            raise ValueError(f'Wrong threshold. You should keep soft > hard, but we got hard {hard} and soft {soft}.')
-        
+    
 
     def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
         """
