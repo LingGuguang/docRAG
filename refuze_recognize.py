@@ -48,7 +48,7 @@ class PreNegativeRejection:
     def _check_threshold(self):
         [self._check_hard_and_soft(self.threshold[key]) for key in self.threshold.keys()]
 
-    async def _check_hard_and_soft(self, hard_and_soft: Tuple[Any, Any]):
+    def _check_hard_and_soft(self, hard_and_soft: Tuple[Any, Any]):
         hard, soft = hard_and_soft
         if hard == None or soft == None:
             return 
@@ -57,9 +57,6 @@ class PreNegativeRejection:
         
 
     def run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
-        return asyncio.run(self._run(docs_with_scores_set))
-
-    async def _run(self, docs_with_scores_set: Dict[str, List[Tuple[str, float]]]) -> Tuple[bool, bool]:
         """
             策略如下。
             只要某个召回文档组的某个文档过了soft threshold，计2分。
@@ -79,16 +76,12 @@ class PreNegativeRejection:
 
         """
         rejection_tag = {}
-        tasks = []
         for key in docs_with_scores_set.keys():
             if key not in self.threshold.keys():
                 raise ValueError(f"key {key} didn't set threshold.")
             docs_with_scores = docs_with_scores_set[key]
             threshold = self.threshold[key]
-            task = asyncio.create_task(self._refuse_tag(rejection_tag, key, docs_with_scores, threshold))
-            tasks.append(task)
-        await asyncio.gather(*task)
-
+            self._refuse_tag(rejection_tag, key, docs_with_scores, threshold)
         count = 0
         total_score = 0
         for key in docs_with_scores_set.keys():
@@ -106,7 +99,7 @@ class PreNegativeRejection:
         else:
             return False, False
         
-    async def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]], threshold: Tuple[Optional[float], Optional[float]]) -> List[int]:
+    def _refuse_tag(self, refuse_tag, key, docs_with_scores: List[Tuple[str, float]], threshold: Tuple[Optional[float], Optional[float]]) -> List[int]:
         """
             strategy set as described in self.run
         """
