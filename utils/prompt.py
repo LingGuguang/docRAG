@@ -77,7 +77,7 @@ INTENT_RECOG_PROMPT = """你是一个机器人，你拥有的功能如下：
 """
 
 
-ENHANCE_ANSWER = """根据以下问题，生成一个可能的答案"""
+AUG_ANSWER = """根据以下问题，生成一个可能的答案"""
 
-ENHANCE_QUERY = """下面的内容中包含了一个询问。重写这个询问，要求用不同的表述方式。
+AUG_QUERY = """下面的内容中包含了一个询问。重写这个询问，要求用不同的表述方式。
 {format_instructions}"""

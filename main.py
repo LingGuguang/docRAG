@@ -8,12 +8,12 @@ from llm import bceEmbeddingFunction, bceRerankFunction, myChain, baichuan2LLM, 
 from langchain_core.documents import Document
 from argparser import main_argparser
 from text_search import BM25Model
-from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting, enhance_answer_prompt, enhance_query_prompt
+from utils.get_prompt import intent_recognize_prompt, Sui_prompt_setting, aug_answer_prompt, aug_query_prompt
 from utils.get_memory import Sui_Memory
 from utils.intent_clear import intent_chain_after_filter, basic_query_intention_filter
 from init_info import InitInfo, INIT_CHAT_ID
 from typing import Any, Tuple
-from refuze_recognize import PreNegativeRejection, Threshold
+from refuze_recognize import PreNegativeRejection
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -35,7 +35,8 @@ class docRAG(InitInfo):
 
     RERANK_TOP_K = 3
     BM25_NUMS = 3
-    RETRIEVEL_NUMS = 3    
+    RETRIEVEL_NUMS = 3   
+    AUG_ANSWER_RETRIEVEL_NUMS = 3 
 
     ### 自定义本地embedding_function
     print("bce embedding is running...")    
@@ -63,6 +64,8 @@ class docRAG(InitInfo):
     pre_negative_rejection = PreNegativeRejection(threshold_path=threshold_path)
 
     bm25 = BM25Model(docs)
+
+    
 
 
     def run(self, query: str) -> str: 
@@ -98,13 +101,13 @@ class docRAG(InitInfo):
             bm25_docs, bm25_scores = self.bm25.topk(query, k=self.BM25_NUMS)
             retrievel_docs_with_score['bm25'] = [(doc, score) for doc, score in zip(bm25_docs, bm25_scores)]
             
-            if self.parser.enhance_answer:
-                hypothetical_answer = self.enhance_answer_generation(query)
-                temp_retrievel_docs_with_scores["enhance_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.ENHANCE_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
-                retrievel_docs_with_score["enhance_answer"] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'][0], temp_retrievel_docs_with_scores['distances'][0])]
+            if self.parser.aug_answer:
+                hypothetical_answer = self.aug_answer_generation(query)
+                temp_retrievel_docs_with_scores["aug_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.AUG_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
+                retrievel_docs_with_score["aug_answer"] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'][0], temp_retrievel_docs_with_scores['distances'][0])]
                 # print(retrievel_docs)
             if int(self.parser.additional_query) > 0:
-                additional_query = self.enhance_query_generation(query, int(self.parser.additional_query))
+                additional_query = self.aug_query_generation(query, int(self.parser.additional_query))
                 # retrievel_docs_with_score["additional_query"] = self.chroma_collection.query(additional_query)
                 # print(retrievel_docs)
 
@@ -157,9 +160,9 @@ class docRAG(InitInfo):
 
     # 有时候query与文章并不相似，我们希望通过LLM生成一个伪答案，我们期望这个伪答案与真正的答案长得有一点像，这样就能在向量数据库里找到真正的答案了。
 
-    def enhance_answer_generation(self, query: str) -> str:
+    def aug_answer_generation(self, query: str) -> str:
         chatChain = myChain(llm=self.llm,
-                            prompt=enhance_answer_prompt()
+                            prompt=aug_answer_prompt()
                             )
         response = chatChain.invoke(query, 
                                     is_output=False,
@@ -168,8 +171,8 @@ class docRAG(InitInfo):
 
     # 你还可以生成多个表述不同的问题
 
-    def enhance_query_generation(self, query: str, query_nums:int=1) -> str:
-        prompt, output_parser = enhance_query_prompt(query_nums)
+    def aug_query_generation(self, query: str, query_nums:int=1) -> str:
+        prompt, output_parser = aug_query_prompt(query_nums)
         chatChain = myChain(llm=self.llm,
                             prompt=prompt,
                             output_parser=output_parser
@@ -177,7 +180,7 @@ class docRAG(InitInfo):
         response = chatChain.invoke(query, 
                                     is_output=False,
                                     stream=False,)
-        print("enhance_query:",response)
+        print("aug_query:",response)
         return response
     
 
