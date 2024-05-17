@@ -133,7 +133,7 @@ class PreNegativeRejection:
         else:
             return self.SOFT_REJECT_RETURN, docs_with_scores_set
         
-    def _refuse_tag(self, scores: List[float]=None, threshold: Tuple[Optional[float], Optional[float]]=None):
+    def _refuse_tag(self, scores: List[float]=None, threshold: Tuple[Optional[int], Optional[int]]=None):
         """
             strategy set as described in self.run
         """
@@ -147,7 +147,7 @@ class PreNegativeRejection:
         
         tag = [0, 0]
         for score in scores:
-            print(score, scores, soft)
+            # print(score, scores, soft)
             if score > soft:
                 return self.ACCEPT
             elif score < hard:

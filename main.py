@@ -112,7 +112,7 @@ class docRAG(InitInfo):
             #     print("retrievel:", retrievel_docs_with_score[key])
             #     print('________________')
             # 检测是否拒识。
-            is_reject, is_accept, retrievel_docs_with_score = self.pre_negative_rejection.run(retrievel_docs_with_score)        
+            (is_reject, is_accept), retrievel_docs_with_score = self.pre_negative_rejection.run(retrievel_docs_with_score)        
             if is_reject:
                 chatChain = myChain(llm=self.llm,
                             prompt=Sui_prompt_setting(status="chat"),
