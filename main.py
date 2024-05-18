@@ -13,7 +13,7 @@ from utils.get_memory import Sui_Memory
 from utils.intent_clear import intent_chain_after_filter, basic_query_intention_filter
 from init_info import InitInfo, INIT_CHAT_ID
 from typing import Any, Tuple
-from refuze_recognize import PreNegativeRejection
+from negative_rejection import PreNegativeRejection
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -106,14 +106,11 @@ class docRAG(InitInfo):
                 temp_retrievel_docs_with_scores["aug_answer"] = self.chroma_collection.query(f'{query} {hypothetical_answer}', n_results=self.AUG_ANSWER_RETRIEVEL_NUMS, include=['documents', 'distances'])
                 retrievel_docs_with_score["aug_answer"] = [(doc, score) for doc, score in zip(temp_retrievel_docs_with_scores['documents'][0], temp_retrievel_docs_with_scores['distances'][0])]
                 # print(retrievel_docs)
-            if int(self.parser.additional_query) > 0:
+            if int(self.parser.additional_query) > 0: #[TODO]
                 additional_query = self.aug_query_generation(query, int(self.parser.additional_query))
                 # retrievel_docs_with_score["additional_query"] = self.chroma_collection.query(additional_query)
                 # print(retrievel_docs)
 
-            # for key in retrievel_docs_with_score.keys():
-            #     print("retrievel:", retrievel_docs_with_score[key])
-            #     print('________________')
             # 检测是否拒识。
             (is_reject, is_accept), retrievel_docs_with_score = self.pre_negative_rejection.run(retrievel_docs_with_score)        
             if is_reject:
