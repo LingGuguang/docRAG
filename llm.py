@@ -89,7 +89,7 @@ class QwenLLMChat(LLM):
         ]
         response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
         # response = self.model.chat(messages, self.tokenizer)
-        print("qwen intent:", response)
+        # print("qwen intent:", response)
         
         return response
     

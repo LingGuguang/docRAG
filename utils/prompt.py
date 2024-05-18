@@ -55,7 +55,10 @@ EXTRA_INFORMATION_PROMPT = """
 HISTORY_CHAT_TITLE = """
 历史聊天记录："""
 
-CHAIN_OF_THOUGHT_FOR_IGNORE_KNOWLEDGE = """
+CHAIN_OF_THOUGHT_FOR_IGNORE_KNOWLEDGE = """你必须按照以下流程回答问题，在流程结束前不可以结束对话：
+1.在第一行，你需要生成你的回答。
+2.在第二行，你需要评价第一行的回答是否存在现实中的人或事。如果存在，回答[是]，否则回答[否]。
+3.在第三行，若第二行的回答为[是]，你需要在第三行生成一个新的回答，且必须表达出提问内容的不理解，且不能再出现任何现实中的人或事。
 """
 
 SUI_CHAT_PROMPT = SUI_TITLE + SUI_SELF_INSTRUCTION + GLOBAL_ORDER + HISTORY_CHAT_TITLE
