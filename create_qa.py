@@ -44,8 +44,8 @@ for ids, docs in tqdm(data):
     temp['qa'] = response
     generate_qa_list.append(temp)
 
-    
-save_json(save_qa_json_path, generate_qa_list)
+    if len(generate_qa_list % 20) == 0:
+        save_json(save_qa_json_path, generate_qa_list)
 
 
 
