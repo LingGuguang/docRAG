@@ -1,6 +1,6 @@
 import chromadb 
 from llm import bceEmbeddingFunction, myChain, QwenLLMChat
-import os, sys
+import os, sys, tqdm
 from utils.basic_utils import save_json, save_text
 from utils.get_prompt import generate_query_from_dataset
 
@@ -11,8 +11,8 @@ print("get chromadb...")
 current_path = os.path.dirname(sys.path[0])
 model_name = "qwen1.5-14B-chat"
 
-save_qa_path = 'dataset/generate_qa.txt'
-
+save_qa_txt_path = 'dataset/generate_qa.txt'
+save_qa_json_path = 'dataset/generate_qa.json'
 
 
 model_path = os.path.join(current_path, f"LLModel/{model_name}")
@@ -22,25 +22,30 @@ chroma_collection = chroma_client.get_or_create_collection(name=chromadb_name_fo
 llm = QwenLLMChat(model_path)
 QAgeneraterChain = myChain(llm=llm,
                 prompt=generate_query_from_dataset(),
-                # memory=self.memory
+                # memory=self.memory,
+                verbose=False
                 )
 
 data = chroma_collection.get()
+ids_set = data['ids']
 data = [(ids, docs) for ids, docs in zip(data['ids'], data['documents'])] 
 print(len(data))
 print(data[0])
 
 generate_qa_list = []
-for ids, docs in data[:10]:
+for ids, docs in tqdm(data):
     if len(docs) < 150:
         continue
     temp = {}
     response = QAgeneraterChain.invoke(docs)
     print(response)
     print('----------\n\n')
+    temp['ids'] = ids 
+    temp['qa'] = response
+    generate_qa_list.append(temp)
+
     
-    generate_qa_list.append(response)
-save_text(save_qa_path, generate_qa_list)
+save_json(save_qa_json_path, generate_qa_list)
 
 
 
