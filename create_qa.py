@@ -29,11 +29,10 @@ QAgeneraterChain = myChain(llm=llm,
 data = chroma_collection.get()
 ids_set = data['ids']
 data = [(ids, docs) for ids, docs in zip(data['ids'], data['documents'])] 
-print(len(data))
-print(data[0])
 
 generate_qa_list = []
-for ids, docs in tqdm(data):
+for i in tqdm(len(data)):
+    ids, docs = data[i]
     if len(docs) < 150:
         continue
     temp = {}
@@ -44,7 +43,7 @@ for ids, docs in tqdm(data):
     temp['qa'] = response
     generate_qa_list.append(temp)
 
-    if len(generate_qa_list % 20) == 0:
+    if len(generate_qa_list % 100) == 0:
         save_json(save_qa_json_path, generate_qa_list)
 
 
