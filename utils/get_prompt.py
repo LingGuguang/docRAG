@@ -1,4 +1,4 @@
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser, ListOutputParser
 from langchain.prompts import (
     ChatPromptTemplate,
     SystemMessagePromptTemplate,
@@ -8,7 +8,8 @@ from langchain.prompts import (
 
 )
 from utils.prompt import (SUI_CHAT_PROMPT, SUI_INTENTION_PROMPT, INTENT_RECOG_PROMPT, SOFT_REJECTION_PROMPT, ACCEPT_PROMPT,
-                          AUG_ANSWER, AUG_QUERY)
+                          AUG_ANSWER, AUG_QUERY,
+                          GENERATE_QUERY_BASED_ON_DATA)
 
 def intent_recognize_prompt():
     chat_prompt = ChatPromptTemplate.from_messages([
@@ -67,3 +68,13 @@ def aug_query_prompt(query: str, nums: int=1):
     
     chat_prompt = chat_prompt.partial(nums=nums, format_instructions=format_instructions)
     return chat_prompt, output_parser
+
+
+def generate_query_from_dataset():
+    chat_prompt = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(GENERATE_QUERY_BASED_ON_DATA),
+            HumanMessagePromptTemplate.from_template("{input}")
+        ])
+    
+    return chat_prompt
+    

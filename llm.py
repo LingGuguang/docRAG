@@ -14,6 +14,7 @@ import re
 
 
 
+
 class bceEmbeddingFunction(EmbeddingFunction[Documents]):
     def __init__(self, path : str):
         # Load model directly
