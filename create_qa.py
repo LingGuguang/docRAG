@@ -31,7 +31,7 @@ ids_set = data['ids']
 data = [(ids, docs) for ids, docs in zip(data['ids'], data['documents'])] 
 
 generate_qa_list = []
-for i in tqdm(len(data)):
+for i in tqdm(range(len(data))):
     ids, docs = data[i]
     if len(docs) < 150:
         continue
