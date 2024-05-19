@@ -22,8 +22,10 @@ chroma_collection = chroma_client.get_or_create_collection(name=chromadb_name_fo
 #                 # memory=self.memory
 #                 )
 
-datas = chroma_collection.get()
-print(datas[0])
+data = chroma_collection.get()
+data = [(ids, docs) for ids, docs in zip(data['ids'], data['documents'])] 
+print(len(data))
+print(data[0])
 
 
 # response = QAgeneraterChain.invoke()
