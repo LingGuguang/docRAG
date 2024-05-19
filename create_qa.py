@@ -1,6 +1,7 @@
 import chromadb 
 from llm import bceEmbeddingFunction, myChain, QwenLLMChat
-import os, sys, tqdm
+import os, sys
+from tqdm import tqdm
 from utils.basic_utils import save_json, save_text
 from utils.get_prompt import generate_query_from_dataset
 
