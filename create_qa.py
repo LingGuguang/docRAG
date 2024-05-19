@@ -11,7 +11,7 @@ print("get chromadb...")
 current_path = os.path.dirname(sys.path[0])
 model_name = "qwen1.5-14B-chat"
 
-save_qa = 'dataset/generate_qa.json'
+save_qa_path = 'dataset/generate_qa.txt'
 
 
 
@@ -32,9 +32,15 @@ print(data[0])
 
 generate_qa_list = []
 for ids, docs in data[:10]:
+    if len(docs) < 150:
+        continue
     temp = {}
     response = QAgeneraterChain.invoke(docs)
+    print(response)
+    print('----------\n\n')
+    
     generate_qa_list.append(response)
+save_text(save_qa_path, generate_qa_list)
 
 
 
